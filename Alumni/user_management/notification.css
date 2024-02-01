@@ -1,0 +1,16 @@
+.notification-badge {
+    position: absolute;
+    text-align: center;
+    top: 28px;
+    left: 50px;
+    background-color: red;
+    color: rgb(85, 83, 83);
+    padding: 2px 5px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
