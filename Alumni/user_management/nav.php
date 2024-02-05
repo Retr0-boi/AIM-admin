@@ -86,7 +86,8 @@ $current_page = basename($_SERVER['SCRIPT_NAME']);
         <i class="fas fa-arrow-left "></i>
         <span class="nav-item">GO BACK</span>
       </a></li>
-    <li><a href="../logout.php" class="logout">
+      
+    <li><a href="../../logout.php" class="logout">
         <i class="fas fa-sign-out-alt"></i>
         <span class="nav-item">Log out</span>
       </a></li>

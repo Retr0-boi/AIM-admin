@@ -63,7 +63,7 @@ if (empty($_SESSION['SUID'])) {
 
     <section class="main">
       <div class="main-top">
-        <h1>ALUMNI ADMIN OPERATIONS</h1>
+        <h1>AIM ALUMNI ADMIN OPERATIONS</h1>
         <!-- <i class="fas fa-user-cog"></i> -->
       </div>
 
@@ -82,14 +82,20 @@ if (empty($_SESSION['SUID'])) {
         </div>
         <div class="card">
           <!-- <img src="#img#"> -->
-          <i class="fa-solid fa-bell"></i>
+          <i class="fa-solid fa-comment-dots"></i>
           <h4>Requests Management</h4>
           <a href="Alumni/user_management/dash.php">user requests</a>
+        </div>
+        <div class="card">
+          <!-- <img src="#img#"> -->
+          <i class="fa-solid fa-bell"></i>
+          <h4>Notifications</h4>
+          <a href="Alumni/user_management/dash.php">notifications</a>
         </div>
 
       </div>
       <div class="main-top">
-        <h1>AIM ADMIN DASHBOARD</h1>
+        <h1>AIM PLACEMENT ADMIN DASHBOARD</h1>
         <!-- <i class="fas fa-user-cog"></i> -->
       </div>
       <div class="users">
