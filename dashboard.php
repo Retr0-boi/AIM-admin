@@ -80,12 +80,7 @@ if (empty($_SESSION['SUID'])) {
           <h4>Post Management</h4>
           <a href="Alumni/user_management/dash.php">post management</a>
         </div>
-        <div class="card">
-          <!-- <img src="#img#"> -->
-          <i class="fa-solid fa-comment-dots"></i>
-          <h4>Requests Management</h4>
-          <a href="Alumni/user_management/dash.php">user requests</a>
-        </div>
+
         <div class="card">
           <!-- <img src="#img#"> -->
           <i class="fa-solid fa-bell"></i>
@@ -97,9 +92,19 @@ if (empty($_SESSION['SUID'])) {
       <div class="main-top">
         <h1>AIM PLACEMENT ADMIN DASHBOARD</h1>
         <!-- <i class="fas fa-user-cog"></i> -->
+
       </div>
       <div class="users">
-
+        <div class="card">
+          <i class="fa-solid fa-comment-dots"></i>
+          <h4>Requests Management</h4>
+          <a href="#">company requests</a>
+        </div>
+        <div class="card">
+          <i class="fa-solid fa-database"></i>
+          <h4>Clear Table</h4>
+          <a href="#">table operations</a>
+        </div>
       </div>
     </section>
   </div>

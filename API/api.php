@@ -4,7 +4,10 @@ include_once("db.php");
 
 $mongoClient = new MongoDB\Client("mongodb://localhost:27017");
 $database = $mongoClient->selectDatabase("AIM");
-$collection = $database->selectCollection("users");
+$userCollection = $database->selectCollection("users");
+$conversationCollection = $database->selectCollection("conversations");
+$messageCollection = $database->selectCollection("messages");
+$postsCollections = $database->selectCollection("posts");
 
 file_put_contents('php://stdout', file_get_contents('php://input'));
 
@@ -56,24 +59,20 @@ function validateAdditionalFields($data)
 }
 
 
-// FETCH CONVOS
-
-
 function fetchConversations($mongoId)
 {
-    global $conversationCollection, $messageCollection;
+    global $conversationCollection, $messageCollection, $userCollection;
 
     // Check if collections are initialized
-    if (!$conversationCollection || !$messageCollection) {
+    if (!$conversationCollection || !$messageCollection || !$userCollection) {
         return ['success' => false, 'error' => 'Collections not properly initialized'];
     }
 
     try {
-        // Find conversations where the user is a participant
+        // Find conversations where the user is a participant excluding the user's own ID
         $cursor = $conversationCollection->find(['participants' => $mongoId]);
 
         $conversations = iterator_to_array($cursor);
-
         // For each conversation, fetch the latest message
         foreach ($conversations as &$conversation) {
             $latestMessage = $messageCollection->findOne(
@@ -85,6 +84,27 @@ function fetchConversations($mongoId)
                 $conversation['latest_message'] = $latestMessage['content'];
                 $conversation['latest_timestamp'] = $latestMessage['timestamp'];
             }
+
+            // Fetch user details for each participant (only name and profile picture)
+            $userDetails = [];
+            foreach ($conversation['participants'] as $participantId) {
+
+                if ($participantId != $mongoId) {
+                    $userDetail = $userCollection->findOne(
+                        ['_id' => new MongoDB\BSON\ObjectId($participantId)],
+                        ['projection' => ['name' => 1, 'profile_picture' => 1]]
+                    );
+
+                    // Check if user details are not null before adding to the array
+                    if ($userDetail !== null) {
+                        $userDetails[] = $userDetail;
+                    }
+                }
+            }
+
+
+            // Add user details to conversation
+            $conversation['user_details'] = $userDetails;
         }
 
         return ['success' => true, 'conversations' => $conversations];
@@ -92,6 +112,7 @@ function fetchConversations($mongoId)
         return ['success' => false, 'error' => 'Failed to fetch conversations'];
     }
 }
+
 
 if ($_SERVER["REQUEST_METHOD"] == "GET" && (isset($_GET['action']) && $_GET['action'] == 'getConversations')) {
     $mongoId = $_GET['mongoId'];
@@ -119,8 +140,6 @@ if ($_SERVER["REQUEST_METHOD"] == "GET" && (isset($_GET['action']) && $_GET['act
         exit;
     }
 }
-
-
 
 
 
@@ -183,7 +202,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && (isset($_GET['action']) && $_GET['ac
     }
 
     if (validateData($data)) {
-        $insertResult = $collection->insertOne($data);
+        $insertResult = $userCollection->insertOne($data);
         $response = ["success" => true];
         echo json_encode($response);
         exit;
@@ -206,7 +225,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && (isset($_GET['action']) && $_GET['ac
     $userEmail = $loginData['email'];
     $userPassword = $loginData['password'];
 
-    $user = $collection->findOne(['email' => $userEmail]);
+    $user = $userCollection->findOne(['email' => $userEmail]);
 
     if ($user && $userPassword === $user['password'] && $user['account_status'] === 'approved') {
         $response = [
@@ -227,7 +246,7 @@ if ($_SERVER["REQUEST_METHOD"] == "GET" && (isset($_GET['action']) && $_GET['act
     $mongoId = $_GET['mongoId'];
 
     if (!empty($mongoId)) {
-        $user = $collection->findOne(['_id' => new MongoDB\BSON\ObjectId($mongoId)]);
+        $user = $userCollection->findOne(['_id' => new MongoDB\BSON\ObjectId($mongoId)]);
     } else {
         $response = ["success" => false, "error" => "Invalid mongoId"];
         echo json_encode($response);
@@ -260,7 +279,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && (isset($_GET['action']) && $_GET['ac
         $query[$key] = $value;
     }
 
-    $users = $collection->find($query);
+    $users = $userCollection->find($query);
 
     $usersArray = iterator_to_array($users);
 
@@ -279,13 +298,15 @@ if ($_SERVER["REQUEST_METHOD"] == "GET" && (isset($_GET['action']) && $_GET['act
     $batchTo = $_GET['batchTo'];
     $department = $_GET['department'];
     $program = $_GET['program'];
+    $mongoId = $_GET['mongoId'];
 
-    $cursor = $collection->find([
+    $cursor = $userCollection->find([
         'batch_from' => $batchFrom,
         'batch_to' => $batchTo,
         'department' => $department,
         'program' => $program,
         'account_status' => 'approved',
+        '_id' => ['$ne' => new MongoDB\BSON\ObjectId($mongoId)]
     ]);
 
     $matchingUsers = iterator_to_array($cursor);
