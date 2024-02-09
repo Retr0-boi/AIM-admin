@@ -320,3 +320,173 @@ if ($_SERVER["REQUEST_METHOD"] == "GET" && (isset($_GET['action']) && $_GET['act
         exit;
     }
 }
+if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_GET['action']) && $_GET['action'] == 'postContent') {
+    // Extract data from the request
+    $data = json_decode(file_get_contents("php://input"), true);
+
+    // Check if the data is valid
+    if ($data === null && json_last_error() !== JSON_ERROR_NONE) {
+        $response = ["success" => false, "error" => "Invalid JSON format"];
+        echo json_encode($response);
+        exit;
+    }
+
+    // Check if subject and content are provided
+    if (!isset($data['subject']) || !isset($data['content'])) {
+        $response = ["success" => false, "error" => "Subject and content are required"];
+        echo json_encode($response);
+        exit;
+    }
+
+    // Prepare data to insert into the database
+    $postData = [
+        'subject' => $data['subject'],
+        'content' => $data['content'],
+        'posted_by' => $data['posted_by'],
+        // Add other fields as needed
+        'created_at' => new MongoDB\BSON\UTCDateTime(), // Add current timestamp
+    ];
+
+    // Insert data into the posts collection
+    $insertResult = $postsCollections->insertOne($postData);
+
+    if ($insertResult->getInsertedCount() > 0) {
+        $response = ["success" => true, "message" => "Content posted successfully"];
+        echo json_encode($response);
+        exit;
+    } else {
+        $response = ["success" => false, "error" => "Failed to post content"];
+        echo json_encode($response);
+        exit;
+    }
+}
+if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_GET['action']) && $_GET['action'] == 'postJobsEvents') {
+    // Extract data from the request
+    $data = json_decode(file_get_contents("php://input"), true);
+
+    // Check if the data is valid
+    if ($data === null && json_last_error() !== JSON_ERROR_NONE) {
+        $response = ["success" => false, "error" => "Invalid JSON format"];
+        echo json_encode($response);
+        exit;
+    }
+
+    // Check if subject and job details are provided
+    if (!isset($data['subject']) || !isset($data['job_details'])) {
+        $response = ["success" => false, "error" => "Subject and job details are required"];
+        echo json_encode($response);
+        exit;
+    }
+
+    // Prepare data to insert into the database
+    $jobData = [
+        'posted_by'=>$data['posted_by'],
+        'type'=>$data['type'],
+        'subject' => $data['subject'],
+        'job_details' => $data['job_details'],
+        'link' => $data['link'],
+        'status' => $data['status'],
+        'created_at' => new MongoDB\BSON\UTCDateTime(), // Add current timestamp
+    ];
+
+    // Insert data into the jobs collection
+    try {
+        // Insert data into the jobs collection
+        $insertResult = $postsCollections->insertOne($jobData);
+    
+        if ($insertResult->getInsertedCount() > 0) {
+            $response = ["success" => true, "message" => "Job posted successfully"];
+            echo json_encode($response);
+            exit;
+        } else {
+            throw new Exception("Failed to insert job data");
+        }
+    } catch (Exception $e) {
+        $response = ["success" => false, "error" => $e->getMessage()];
+        echo json_encode($response);
+        exit;
+    }
+}
+if ($_SERVER["REQUEST_METHOD"] == "GET" && isset($_GET['action']) && $_GET['action'] == 'getJobs') {
+    // Retrieve job data from the database
+    $cursor = $postsCollections->aggregate([
+        ['$match' => ['type' => 'job','status'=> 'approved']],
+        ['$project' => ['subject' => 1, 'job_details' => 1, 'created_at' => 1, 'link' => 1]],
+    ]);
+    // Convert the cursor to an array
+    $jobs = iterator_to_array($cursor);
+
+    if (!empty($jobs)) {
+        // Convert 'created_at' field to string format and sort by descending order
+        foreach ($jobs as &$job) {
+            $job['created_at'] = $job['created_at']->toDateTime()->format('Y-m-d H:i:s');
+        }
+        usort($jobs, function($a, $b) {
+            return strtotime($b['created_at']) - strtotime($a['created_at']);
+        });
+
+        // Prepare the response
+        $response = ["success" => true, "jobs" => $jobs];
+        echo json_encode($response);
+        exit;
+    } else {
+        $response = ["success" => false, "error" => "No jobs found"];
+        echo json_encode($response);
+        exit;
+    }
+}
+if ($_SERVER["REQUEST_METHOD"] == "GET" && isset($_GET['action']) && $_GET['action'] == 'getEvents') {
+    // Retrieve job data from the database
+    $cursor = $postsCollections->aggregate([
+        ['$match' => ['type' => 'event']],
+        ['$project' => ['subject' => 1, 'job_details' => 1, 'created_at' => 1, 'link' => 1]],
+    ]);
+    // Convert the cursor to an array
+    $jobs = iterator_to_array($cursor);
+
+    if (!empty($jobs)) {
+        // Convert 'created_at' field to string format and sort by descending order
+        foreach ($jobs as &$job) {
+            $job['created_at'] = $job['created_at']->toDateTime()->format('Y-m-d H:i:s');
+        }
+        usort($jobs, function($a, $b) {
+            return strtotime($b['created_at']) - strtotime($a['created_at']);
+        });
+
+        // Prepare the response
+        $response = ["success" => true, "jobs" => $jobs];
+        echo json_encode($response);
+        exit;
+    } else {
+        $response = ["success" => false, "error" => "No jobs found"];
+        echo json_encode($response);
+        exit;
+    }
+}
+if ($_SERVER["REQUEST_METHOD"] == "GET" && isset($_GET['action']) && $_GET['action'] == 'searchUsers') {
+    $batchFrom = $_GET['batchFrom'];
+    $batchTo = $_GET['batchTo'];
+    $department = $_GET['department'];
+    $program = $_GET['program'];
+    $mongoId = $_GET['mongoId'];
+
+    $cursor = $userCollection->find([
+        'batch_from' => $batchFrom,
+        'batch_to' => $batchTo,
+        'department' => $department,
+        'program' => $program,
+        'account_status' => 'approved',
+        '_id' => ['$ne' => new MongoDB\BSON\ObjectId($mongoId)]
+    ]);
+
+    $matchingUsers = iterator_to_array($cursor);
+    if (!empty($matchingUsers)) {
+        $response = ["success" => true, "matchedUsers" => $matchingUsers];
+        echo json_encode($response);
+        exit;
+    } else {
+        $response = ["success" => false, "error" => "No matching users found"];
+        echo json_encode($response);
+        exit;
+    }
+}

@@ -1,6 +1,6 @@
 <?php
-// include 'mongoDB.php';
-include 'DBconnection.php';
+include 'mongoDB.php';
+// include 'DBconnection.php';
 
 session_start();
 if (!empty($_SESSION['SUID'])) {
@@ -21,6 +21,8 @@ if (isset($_POST['login'])) {
     if ($admin) {
         // Check hashed password (you should use a proper hashing algorithm)
         if ($password == $admin['password']) {
+            session_start();
+
             $_SESSION['name'] = $admin['username'];
             $_SESSION['SUID'] = $admin['_id'];
 
