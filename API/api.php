@@ -380,8 +380,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_GET['action']) && $_GET['act
 
     // Prepare data to insert into the database
     $jobData = [
-        'posted_by'=>$data['posted_by'],
-        'type'=>$data['type'],
+        'posted_by' => $data['posted_by'],
+        'type' => $data['type'],
         'subject' => $data['subject'],
         'job_details' => $data['job_details'],
         'link' => $data['link'],
@@ -393,7 +393,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_GET['action']) && $_GET['act
     try {
         // Insert data into the jobs collection
         $insertResult = $postsCollections->insertOne($jobData);
-    
+
         if ($insertResult->getInsertedCount() > 0) {
             $response = ["success" => true, "message" => "Job posted successfully"];
             echo json_encode($response);
@@ -410,7 +410,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_GET['action']) && $_GET['act
 if ($_SERVER["REQUEST_METHOD"] == "GET" && isset($_GET['action']) && $_GET['action'] == 'getJobs') {
     // Retrieve job data from the database
     $cursor = $postsCollections->aggregate([
-        ['$match' => ['type' => 'job','status'=> 'approved']],
+        ['$match' => ['type' => 'job', 'status' => 'approved']],
         ['$project' => ['subject' => 1, 'job_details' => 1, 'created_at' => 1, 'link' => 1]],
     ]);
     // Convert the cursor to an array
@@ -421,7 +421,7 @@ if ($_SERVER["REQUEST_METHOD"] == "GET" && isset($_GET['action']) && $_GET['acti
         foreach ($jobs as &$job) {
             $job['created_at'] = $job['created_at']->toDateTime()->format('Y-m-d H:i:s');
         }
-        usort($jobs, function($a, $b) {
+        usort($jobs, function ($a, $b) {
             return strtotime($b['created_at']) - strtotime($a['created_at']);
         });
 
@@ -449,7 +449,7 @@ if ($_SERVER["REQUEST_METHOD"] == "GET" && isset($_GET['action']) && $_GET['acti
         foreach ($jobs as &$job) {
             $job['created_at'] = $job['created_at']->toDateTime()->format('Y-m-d H:i:s');
         }
-        usort($jobs, function($a, $b) {
+        usort($jobs, function ($a, $b) {
             return strtotime($b['created_at']) - strtotime($a['created_at']);
         });
 
@@ -463,28 +463,86 @@ if ($_SERVER["REQUEST_METHOD"] == "GET" && isset($_GET['action']) && $_GET['acti
         exit;
     }
 }
-if ($_SERVER["REQUEST_METHOD"] == "GET" && isset($_GET['action']) && $_GET['action'] == 'searchUsers') {
-    $batchFrom = $_GET['batchFrom'];
-    $batchTo = $_GET['batchTo'];
-    $department = $_GET['department'];
-    $program = $_GET['program'];
-    $mongoId = $_GET['mongoId'];
+if ($_SERVER["REQUEST_METHOD"] == "GET" && isset($_GET['action']) && $_GET['action'] == 'searchAlumni') {
+    $data = json_decode(file_get_contents("php://input"), true);
 
-    $cursor = $userCollection->find([
-        'batch_from' => $batchFrom,
-        'batch_to' => $batchTo,
-        'department' => $department,
-        'program' => $program,
-        'account_status' => 'approved',
-        '_id' => ['$ne' => new MongoDB\BSON\ObjectId($mongoId)]
-    ]);
+    // Initialize an empty array to store the query conditions
+    $queryConditions = [];
 
-    $matchingUsers = iterator_to_array($cursor);
+    if (isset($data['name']) && $data['name'] != '') {
+        $queryConditions['name'] = $data['name'];
+        error_log("passed query: name - " . $data['name']);
+    }
+
+    if (isset($data['batchFrom']) && $data['batchFrom'] != '') {
+        $queryConditions['batch_from'] = $data['batchFrom'];
+        error_log("passed query: batchFrom - " . $data['batchFrom']);
+    }
+
+    if (isset($data['batchTo']) && $data['batchTo'] != '') {
+        $queryConditions['batch_to'] = $data['batchTo'];
+        error_log("passed query: batchTo - " . $data['batchTo']);
+    }
+
+    if (isset($data['department']) && $data['department'] != '') {
+        $queryConditions['department'] = $data['department'];
+        error_log("passed query: department - " . $data['department']);
+    }
+
+    if (isset($data['course']) && $data['course'] != '') {
+        $queryConditions['program'] = $data['course'];
+        error_log("passed query: course - " . $data['course']);
+    }
+
+    $queryConditions['account_status'] = 'approved';
+
+    // $constructedQuery = json_encode($queryConditions);
+
+    // error_log("constructed query: $constructedQuery");s
+    // error_log("query var dump: " . var_dump($constructedQuery));
+
+    $fields = [
+        'name' => 1,
+        'profile_picture' => 1,
+        '_id' => 1 // Include the Mongo Object ID as well
+    ];
+
+    // Find users based on the constructed query conditions
+    $cursor = $userCollection->find($queryConditions, $fields);
+
+
+    // Manually count the number of documents
+    $documentCount = 0;
+    foreach ($cursor as $_) {
+        $documentCount++;
+    }
+    // error_log("Constructed query: $constructedQuery");
+    // Log the number of documents returned by the find operation
+    error_log("Number of documents found: " . $documentCount);
+    $cursor = $userCollection->find($queryConditions, $fields);
+
+    $matchingUsers = [];
+    foreach ($cursor as $document) {
+        // Extract the required fields from the document
+        $userData = [
+            'name' => $document->name,
+            'profile_picture' => $document->profile_picture,
+            '_id' => $document->_id->__toString() // Convert MongoDB ObjectId to string
+        ];
+        // Add the user data to the array
+        $matchingUsers[] = $userData;
+    }
+    error_log("documents before returning: " . json_encode($matchingUsers));
+
     if (!empty($matchingUsers)) {
         $response = ["success" => true, "matchedUsers" => $matchingUsers];
+        error_log("documents returned: " . json_encode($response));
+
         echo json_encode($response);
         exit;
     } else {
+        // Log that no matching users were found
+        error_log("No matching users found");
         $response = ["success" => false, "error" => "No matching users found"];
         echo json_encode($response);
         exit;
