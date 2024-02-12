@@ -342,6 +342,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_GET['action']) && $_GET['act
         'job_details' => $data['job_details'],
         'link' => $data['link'],
         'status' => $data['status'],
+        'updation_date' => "",
+        'updated_by' => "",
         'created_at' => new MongoDB\BSON\UTCDateTime(), // Add current timestamp
     ];
 
@@ -596,17 +598,17 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_GET['action']) && $_GET['act
                 // For example, you might insert the content into a database and store the image path
                 // Here, I'm assuming you're using MongoDB as in the provided code
                 try {
-                    // Insert the content and image path into the database
-                    // Replace the following lines with your database logic
                     $insertResult = $postsCollections->insertOne([
                         'subject' => $subject,
                         'content' => $content,
-                        'postedBy' => $postedBy,
+                        'posted_by' => $postedBy,
                         'type' => $type,
                         'image' => $destination,
-                        'likeCount' => 0, 
+                        'likeCount' => 0,
                         'comments' => [],
-                        'likes' => [] 
+                        'likes' => [],
+                        'created_at' => new MongoDB\BSON\UTCDateTime()
+
                     ]);
 
                     if ($insertResult->getInsertedCount() > 0) {
@@ -642,9 +644,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_GET['action']) && $_GET['act
                     'content' => $content,
                     'postedBy' => $postedBy,
                     'type' => $type,
-                    'likeCount' => 0, 
+                    'likeCount' => 0,
                     'comments' => [],
-                    'likes' => [] 
+                    'likes' => []
                 ]);
 
                 if ($insertResult->getInsertedCount() > 0) {
@@ -669,6 +671,53 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_GET['action']) && $_GET['act
     } else {
         http_response_code(400); // Bad Request
         $response = ["success" => false, "error" => "Missing parameters"];
+        echo json_encode($response);
+        exit;
+    }
+}
+
+if ($_SERVER["REQUEST_METHOD"] == "GET" && isset($_GET['action']) && $_GET['action'] == 'getPosts') {
+    // Query to find posts with type "post"
+    $options = [
+        'sort' => ['created_at' => -1] 
+    ];
+    $cursor = $postsCollections->find(['type' => 'post'], $options);
+    // Convert the cursor to an array
+    $posts = iterator_to_array($cursor);
+
+    if (!empty($posts)) {
+        // Prepare the response with user information
+        $responsePosts = [];
+        foreach ($posts as $post) {
+            // Fetch user information based on 'postedBy' ObjectId
+            $user = $userCollection->findOne(['_id' => new MongoDB\BSON\ObjectId($post['posted_by'])]);
+            if ($user) {
+                // Convert BSONDocument to array
+                $userArray = [];
+                foreach ($user as $key => $value) {
+                    $userArray[$key] = $value;
+                }
+
+                // Create a new associative array for the response post
+                $responsePost = [];
+                
+                // Merge post and user information into the response post array
+                foreach ($post as $key => $value) {
+                    $responsePost[$key] = $value;
+                }
+                $responsePost['user'] = $userArray;
+                
+                // Add the response post array to the response posts array
+                $responsePosts[] = $responsePost;
+            }
+        }
+
+        // Prepare the response
+        $response = ["success" => true, "posts" => $responsePosts];
+        echo json_encode($response);
+        exit;
+    } else {
+        $response = ["success" => false, "error" => "No posts found"];
         echo json_encode($response);
         exit;
     }

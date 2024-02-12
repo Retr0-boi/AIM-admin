@@ -78,7 +78,7 @@ if (empty($_SESSION['SUID'])) {
           <!-- <img src="#img#"> -->
           <i class="fa-regular fa-image"></i>
           <h4>Post Management</h4>
-          <a href="Alumni/user_management/dash.php">post management</a>
+          <a href="Alumni/post_management/dash.php">post management</a>
         </div>
 
         <div class="card">
