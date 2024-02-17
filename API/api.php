@@ -9,11 +9,12 @@ $conversationCollection = $database->selectCollection("conversations");
 $messageCollection = $database->selectCollection("messages");
 $postsCollections = $database->selectCollection("posts");
 $authCollections = $database->selectCollection("auth");
+$filtersCollections = $database->selectCollection("filters");
 
 file_put_contents('php://stdout', file_get_contents('php://input'));
 
-// CREATION VALIDATION
-function validateData($data) {
+function validateData($data)
+{
     $requiredFields = [
         'department',
         'program',
@@ -39,7 +40,8 @@ function validateData($data) {
     return validateAdditionalFields($data); // Also validate additional fields
 }
 
-function validateAdditionalFields($data) {
+function validateAdditionalFields($data)
+{
     if (isset($data['current_status']) && $data['current_status'] === 'Student') {
         return isset($data['current_institution'])
             && isset($data['programme'])
@@ -51,13 +53,12 @@ function validateAdditionalFields($data) {
             && isset($data['designation']);
     }
 
-    // Add validations for other current_status values as needed
 
-    // If no specific conditions are met, return true
     return true;
 }
 
-function fetchConversations($mongoId) {
+function fetchConversations($mongoId)
+{
     global $conversationCollection, $messageCollection, $userCollection;
 
     // Check if collections are initialized
@@ -70,7 +71,7 @@ function fetchConversations($mongoId) {
             'sort' => ['latest_timestamp' => -1]
         ];
         // Find conversations where the user is a participant excluding the user's own ID
-        $cursor = $conversationCollection->find(['participants' => $mongoId],$filters);
+        $cursor = $conversationCollection->find(['participants' => $mongoId], $filters);
 
         $conversations = iterator_to_array($cursor);
         // For each conversation, fetch the latest message
@@ -93,7 +94,7 @@ function fetchConversations($mongoId) {
                 if ($participantId != $mongoId) {
                     $userDetail = $userCollection->findOne(
                         ['_id' => new MongoDB\BSON\ObjectId($participantId)],
-                        ['projection' => ['_id'=>1,'name' => 1, 'profile_picture' => 1]]
+                        ['projection' => ['_id' => 1, 'name' => 1, 'profile_picture' => 1]]
                     );
 
                     // Check if user details are not null before adding to the array
@@ -111,6 +112,61 @@ function fetchConversations($mongoId) {
         return ['success' => true, 'conversations' => $conversations];
     } catch (Exception $e) {
         return ['success' => false, 'error' => 'Failed to fetch conversations'];
+    }
+}
+
+function initiateConversation($senderId, $recipientId)
+{
+    global $conversationCollection;
+
+    try {
+        // Check if a conversation already exists between the sender and recipient
+        $existingConversation = $conversationCollection->findOne([
+            'participants' => ['$all' => [$senderId, $recipientId]],
+        ]);
+
+        if ($existingConversation) {
+            $conversationId = $existingConversation['_id'];
+            return ['success' => true, 'conversationId' => $conversationId];
+        }
+
+        // If no existing conversation, create a new one
+        $newConversation = [
+            'participants' => [$senderId, $recipientId],
+            'latest_message' => "no new messages",
+            'latest_timestamp' => new MongoDB\BSON\UTCDateTime(),
+        ];
+
+        $insertResult = $conversationCollection->insertOne($newConversation);
+
+        if ($insertResult->getInsertedCount() > 0) {
+            $insertedId = $insertResult->getInsertedId();
+            return ['success' => true, 'conversationId' => $insertedId];
+        } else {
+            return ['success' => false, 'error' => 'Failed to initiate conversation'];
+        }
+    } catch (Exception $e) {
+        return ['success' => false, 'error' => 'Failed to initiate conversation'];
+    }
+}
+
+function fetchMessages($conversationObjectId)
+{
+    global $messageCollection;
+
+    try {
+        $filters = [
+            'sort' => ['timestamp' => -1]
+        ];
+        // Assuming $collection is your MongoDB collection for messages
+        $messages = $messageCollection->find(['conversationId' => $conversationObjectId], $filters);
+
+        // Convert MongoDB cursor to array
+        $messagesArray = iterator_to_array($messages);
+
+        return ['success' => true, 'messages' => $messagesArray];
+    } catch (Exception $e) {
+        return ['success' => false, 'error' => $e->getMessage()];
     }
 }
 
@@ -141,40 +197,6 @@ if ($_SERVER["REQUEST_METHOD"] == "GET" && (isset($_GET['action']) && $_GET['act
     }
 }
 
-function initiateConversation($senderId, $recipientId) {
-    global $conversationCollection;
-
-    try {
-        // Check if a conversation already exists between the sender and recipient
-        $existingConversation = $conversationCollection->findOne([
-            'participants' => ['$all' => [$senderId, $recipientId]],
-        ]);
-
-        if ($existingConversation) {
-            $conversationId = $existingConversation['_id'];
-            return ['success' => true,'conversationId' => $conversationId];
-        }
-
-        // If no existing conversation, create a new one
-        $newConversation = [
-            'participants' => [$senderId, $recipientId],
-            'latest_message'=> "no new messages",
-            'latest_timestamp'=>new MongoDB\BSON\UTCDateTime(),
-        ];
-
-        $insertResult = $conversationCollection->insertOne($newConversation);
-
-        if ($insertResult->getInsertedCount() > 0) {
-            $insertedId = $insertResult->getInsertedId();
-            return ['success' => true,'conversationId' => $insertedId];
-        } else {
-            return ['success' => false, 'error' => 'Failed to initiate conversation'];
-        }
-    } catch (Exception $e) {
-        return ['success' => false, 'error' => 'Failed to initiate conversation'];
-    }
-}
-
 if ($_SERVER["REQUEST_METHOD"] == "POST" && (isset($_GET['action']) && $_GET['action'] == 'initiateConversation')) {
     $senderId = $_POST['senderId'];
     $recipientId = $_POST['recipientId'];
@@ -201,7 +223,27 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && (isset($_GET['action']) && $_GET['ac
     }
 
     if (validateData($data)) {
-        $insertResult = $userCollection->insertOne($data);
+        // Exclude password from user details
+        $userData = $data;
+        unset($userData['password']);
+
+        // Insert user details into "user" collection
+        $insertResult = $userCollection->insertOne($userData);
+
+        // Get the inserted user's ID
+        $userId = $insertResult->getInsertedId();
+        $hashedPassword = md5($data['password']);
+        // Prepare data for "auth" collection
+        $authData = [
+            // "user_id" => $userId,
+            '_id' => new MongoDB\BSON\ObjectId($userId),
+            "email" => $data['email'],
+            "password" => $hashedPassword
+        ];
+
+        // Insert email/password into "auth" collection
+        $authInsertResult = $authCollections->insertOne($authData);
+
         $response = ["success" => true];
         echo json_encode($response);
         exit;
@@ -224,21 +266,39 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && (isset($_GET['action']) && $_GET['ac
     $userEmail = $loginData['email'];
     $userPassword = $loginData['password'];
 
-    $user = $userCollection->findOne(['email' => $userEmail]);
+    // Query the "auth" collection to find the user based on email
+    $authUser = $authCollections->findOne(['email' => $userEmail]);
 
-    if ($user && $userPassword === $user['password'] && $user['account_status'] === 'approved') {
-        $response = [
-            "success" => true,
-            "mongo_id" => (string)$user['_id'],
-            "name" => (string)$user['name']
-        ];
-        echo json_encode($response);
-        exit;
-    } else {
-        $response = ["success" => false, "error" => "Invalid email or password or not approved"];
-        echo json_encode($response);
-        exit;
+    if ($authUser) {
+        // Compare hashed password from the database with the hashed password provided by the user
+        if (md5($userPassword) === $authUser['password']) {
+            // Retrieve the user ID
+            $userId = $authUser['_id'];
+
+            // Query the "user" collection for the account status
+            $user = $userCollection->findOne(['_id' => new MongoDB\BSON\ObjectID($userId)]);
+
+            if ($user && $user['account_status'] === 'approved') {
+                $response = [
+                    "success" => true,
+                    "mongo_id" => (string)$user['_id'],
+                    "name" => (string)$user['name'],
+                    "email" => (string)$userEmail,
+                    "password" => (string)$userPassword,
+                    "department" => (string)$user['department'],
+                    "batch_from" => (string)$user['batch_from'],
+                    "batch_to" => (string)$user['batch_to'],
+                ];
+                echo json_encode($response);
+                exit;
+            }
+        }
     }
+
+    // If no user found or password doesn't match, or account not approved
+    $response = ["success" => false, "error" => "Invalid email or password or not approved"];
+    echo json_encode($response);
+    exit;
 }
 
 if ($_SERVER["REQUEST_METHOD"] == "GET" && (isset($_GET['action']) && $_GET['action'] == 'getUserData')) {
@@ -347,6 +407,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_GET['action']) && $_GET['act
         'job_details' => $data['job_details'],
         'link' => $data['link'],
         'status' => $data['status'],
+        'department' => $data['department'],
         'updation_date' => "",
         'updated_by' => "",
         'created_at' => new MongoDB\BSON\UTCDateTime(), // Add current timestamp
@@ -582,8 +643,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_GET['action']) && $_GET['act
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_GET['action']) && $_GET['action'] == 'postContent') {
     $subject = $_POST['subject'];
     $content = $_POST['content'];
-    $postedBy = $_POST['posted_by']; 
+    $postedBy = $_POST['posted_by'];
     $type = $_POST['type'];
+    $department = $_POST['department'];
 
     if (!empty($subject) && !empty($content) && !empty($postedBy) && !empty($type)) {
         if (isset($_FILES['image']) && is_uploaded_file($_FILES['image']['tmp_name'])) {
@@ -601,6 +663,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_GET['action']) && $_GET['act
                         'content' => $content,
                         'posted_by' => $postedBy,
                         'type' => $type,
+                        'department' => $department,
                         'image' => $destination,
                         'likeCount' => 0,
                         'comments' => [],
@@ -610,25 +673,25 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_GET['action']) && $_GET['act
                     ]);
 
                     if ($insertResult->getInsertedCount() > 0) {
-                        http_response_code(200); 
+                        http_response_code(200);
                         $response = ["success" => true, "message" => "Content posted successfully"];
                         echo json_encode($response);
                         exit;
                     } else {
-                        http_response_code(500); 
+                        http_response_code(500);
                         $response = ["success" => false, "error" => "Failed to post content"];
                         echo json_encode($response);
                         exit;
                     }
                 } catch (Exception $e) {
                     error_log("Exception occurred: " . $e->getMessage());
-                    http_response_code(500); 
+                    http_response_code(500);
                     $response = ["success" => false, "error" => "Failed to post content: " . $e->getMessage()];
                     echo json_encode($response);
                     exit;
                 }
             } else {
-                http_response_code(500); 
+                http_response_code(500);
                 $response = ["success" => false, "error" => "Failed to move uploaded file"];
                 echo json_encode($response);
                 exit;
@@ -640,6 +703,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_GET['action']) && $_GET['act
                     'content' => $content,
                     'posted_by' => $postedBy,
                     'type' => $type,
+                    'department' => $department,
                     'likeCount' => 0,
                     'comments' => [],
                     'likes' => [],
@@ -675,14 +739,18 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_GET['action']) && $_GET['act
 }
 
 if ($_SERVER["REQUEST_METHOD"] == "GET" && isset($_GET['action']) && $_GET['action'] == 'getPosts') {
-    // Query to find posts with type "post"
+    $department = $_GET['department'];
+
     $options = [
-        'sort' => ['created_at' => -1] 
+        'sort' => ['created_at' => -1]
     ];
     $filter = [
-        '$or' => [
-            ['type' => 'post'],
-            ['type' => 'admin'],
+        '$and' => [
+            ['$or' => [
+                ['type' => 'post'],
+                ['type' => 'admin']
+            ]],
+            ['department' => $department]
         ]
     ];
     $cursor = $postsCollections->find($filter, $options);
@@ -704,13 +772,13 @@ if ($_SERVER["REQUEST_METHOD"] == "GET" && isset($_GET['action']) && $_GET['acti
 
                 // Create a new associative array for the response post
                 $responsePost = [];
-                
+
                 // Merge post and user information into the response post array
                 foreach ($post as $key => $value) {
                     $responsePost[$key] = $value;
                 }
                 $responsePost['user'] = $userArray;
-                
+
                 // Add the response post array to the response posts array
                 $responsePosts[] = $responsePost;
             }
@@ -754,18 +822,82 @@ if ($_SERVER["REQUEST_METHOD"] == "GET" && (isset($_GET['action']) && $_GET['act
     }
 }
 
-// Function to fetch messages
-function fetchMessages($conversationObjectId) {
-    global $messageCollection;
-    try {
-        // Assuming $collection is your MongoDB collection for messages
-        $messages = $messageCollection->find(['conversationId' => $conversationObjectId]);
+if ($_SERVER["REQUEST_METHOD"] == "POST" && (isset($_GET['action']) && $_GET['action'] == 'sendMessage')) {
+    // Assuming you have sanitized the input values to prevent SQL injection
 
-        // Convert MongoDB cursor to array
-        $messagesArray = iterator_to_array($messages);
+    $conversationId = $_POST['conversationId'];
+    $message = $_POST['message'];
+    $receiverMongoId = $_POST['receiverMongoId'];
+    $senderMongoId = $_POST['senderMongoId'];
 
-        return ['success' => true, 'messages' => $messagesArray];
-    } catch (Exception $e) {
-        return ['success' => false, 'error' => $e->getMessage()];
+    if (!empty($conversationId) && !empty($message) && !empty($receiverMongoId) && !empty($senderMongoId)) {
+
+        $messageData = [
+            'conversationId' => $conversationId,
+            'message' => $message,
+            'receiverMongoId' => $receiverMongoId,
+            'senderMongoId' => $senderMongoId,
+            'timestamp' => new MongoDB\BSON\UTCDateTime(),
+        ];
+
+        $result = $messageCollection->insertOne($messageData);
+
+        if ($result->getInsertedCount() > 0) {
+            // Update latest_timestamp and latest_message in the conversations table
+            $updateResult = $conversationCollection->updateOne(
+                ['_id' => new MongoDB\BSON\ObjectID($conversationId)],
+                ['$set' => [
+                    'latest_timestamp' => new MongoDB\BSON\UTCDateTime(),
+                    'latest_message' => $message,
+                ]]
+            );
+
+            if ($updateResult->getModifiedCount() > 0) {
+                echo json_encode(['success' => true]);
+                exit;
+            } else {
+                echo json_encode(['success' => false, 'error' => 'Failed to update conversation']);
+                exit;
+            }
+        } else {
+            echo json_encode(['success' => false, 'error' => 'Failed to insert message into database']);
+            exit;
+        }
+    } else {
+        echo json_encode(['success' => false, 'error' => 'Missing required parameters']);
+        exit;
+    }
+}
+
+if ($_SERVER["REQUEST_METHOD"] == "GET" && isset($_GET['action']) && $_GET['action'] == 'getDepartmentsAndPrograms') {
+    $result = $filtersCollections->find();
+
+    if ($result) {
+        $departments = [];
+
+        foreach ($result as $doc) {
+            $departments[] = $doc['department'];
+        }
+
+        echo json_encode(['success' => true, 'departments' => $departments]);
+        exit;
+    } else {
+        echo json_encode(['success' => false, 'error' => 'Failed to fetch departments data']);
+        exit;
+    }
+}
+
+if ($_SERVER["REQUEST_METHOD"] == "GET" && isset($_GET['action']) && $_GET['action'] == 'getCourses') {
+    $department = $_GET['department'];
+
+    $result = $filtersCollections->findOne(['department' => $department]);
+
+    if ($result) {
+        $courses = $result['courses'];
+        echo json_encode(['success' => true, 'courses' => $courses]);
+        exit;
+    } else {
+        echo json_encode(['success' => false, 'error' => 'Failed to fetch courses for the department']);
+        exit;
     }
 }
