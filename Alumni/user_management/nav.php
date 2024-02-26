@@ -1,15 +1,21 @@
 <?php
 include $_SERVER['DOCUMENT_ROOT'] . '/AIM/ALumni/mongoDB.php';
+if (!isset($_SESSION['dept'])) {
+  session_start();
+  $SNAME = $_SESSION['name'];
+  $SDEPT = $_SESSION['dept'];
+}
+if ($SDEPT == 'admin')
+    $q_get_requests_count = ['account_status' => 'waiting'];
+else
+    $q_get_requests_count = ['account_status' => 'waiting', 'department' => $SDEPT];
 
-
-$q_get_requests_count = ['account_status' => 'waiting'];
+// $q_get_requests_count = ['account_status' => 'waiting'];
 $usersCollection = $database->users;
 $r_get_requests_count = $usersCollection->find($q_get_requests_count);
 $r_get_requests_array_count = iterator_to_array($r_get_requests_count);
 $reqs_available_count = count($r_get_requests_array_count);
 
-session_start();
-$SNAME = $_SESSION['name'];
 if (empty($_SESSION['SUID'])) {
   header('location:../../index.php');
 }

@@ -1,0 +1,86 @@
+.post-card-main {
+    display: inline-flex;
+
+    width: 100%;
+    height: 100%;
+    background-color: #ccc;
+    border-radius: 20px;
+}
+
+.post-card {
+    margin: 20px;
+    /* min-height: 670px; */
+    /* max-height: 670px; */
+    min-width: 400px;
+    max-width: 400px;
+    border-radius: 20px;
+    padding: 20px;
+    background-color: #ddd;
+}
+
+.post-card-subject {
+    font-size: 24px;
+    text-align: center;
+}
+
+.post-card-image {
+    /* height: 300px; */
+    /* width: 360px; */
+    margin-top: 20px;
+    position: relative;
+    /* background-color: red; */
+}
+
+.post-card-image img {
+    max-height: 300px;
+    min-height: 300px;
+    max-width: 360px;
+    min-width: 360px;
+}
+
+.post-card-image p {
+    vertical-align: middle;
+    text-align: center;
+}
+
+.post-card-content {
+    margin-top: 20px;
+    /* background-color: blue; */
+    height: 200px;
+}
+
+.post-card-button {
+    margin-top: 20px;
+    position: relative;
+    /* top: 35%; */
+
+}
+
+.post-card-button button {
+    width: 100%;
+    padding: 6px 20px;
+    border-radius: 10px;
+    cursor: pointer;
+    background: transparent;
+    border: 1px solid #d44a4a;
+}
+
+.post-card-button button:hover {
+    background: #d44a4a;
+    color: #fff;
+    transition: 0.5rem;
+}
+.post-card-button .restore {
+    width: 100%;
+    padding: 6px 20px;
+    border-radius: 10px;
+    cursor: pointer;
+    background: transparent;
+    border: 1px solid #4AD489;
+}
+
+.post-card-button .restore:hover {
+    background: #4AD489;
+    color: #fff;
+    transition: 0.5rem;
+}

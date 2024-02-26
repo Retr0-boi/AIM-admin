@@ -17,22 +17,10 @@ include '../mongoDB.php';
 
     <section class="main">
       <div class="main-top">
-        <h1>ALBERTIANS ACCOUNT MANAGEMENT PAGE</h1>
-
+        <h1>ALBERTIANS ADMIN MANAGEMENT</h1>
         <!-- <i class="fas fa-user-cog"></i> -->
       </div>
       welcome <?php echo $SNAME; ?>
-      <div class="attendance">
-        <h1>TO DO LIST</h1>
-        <div style="position:relative;left:20px;">
-          <ul>
-            <li>Request more info mail</li>
-            <li>main logic for pending page</li>
-            
-          </ul>
-        </div>
-      </div>
-
     </section>
   </div>
 

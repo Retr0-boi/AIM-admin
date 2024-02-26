@@ -1,8 +1,16 @@
 <?php
 include '../mongoDB.php';
 
-$q_get_requests = ['account_status' => 'deleted'];
-
+if (!isset($_SESSION['dept'])) {
+    session_start();
+    $SNAME = $_SESSION['name'];
+    $SDEPT = $_SESSION['dept'];
+}
+if ($SDEPT == 'admin') {
+    $q_get_requests = ['account_status' => 'deleted'];
+} else {
+    $q_get_requests = ['account_status' => 'deleted', 'department' => $SDEPT];
+}
 $usersCollection = $database->users;
 
 $r_get_requests = $usersCollection->find($q_get_requests);
@@ -29,7 +37,7 @@ $reqs_available = count($r_get_requests_array) > 0;
         <section class="main">
             <div class="main-top">
                 <h1>Request Management</h1>
-                <i class="fas fa-user-cog"></i>
+                <!-- <i class="fas fa-user-cog"></i> -->
             </div>
 
             <section class="attendance">

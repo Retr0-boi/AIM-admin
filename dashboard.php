@@ -1,6 +1,9 @@
 <?php
-session_start();
-$SNAME = $_SESSION['name'];
+if (!isset($_SESSION['SUID'])) {
+  session_start();
+  $SNAME = $_SESSION['name'];
+  $SDEPT = $_SESSION['dept'];
+}
 if (empty($_SESSION['SUID'])) {
   header('location:index.php');
 }
@@ -63,7 +66,7 @@ if (empty($_SESSION['SUID'])) {
 
     <section class="main">
       <div class="main-top">
-        <h1>AIM ALUMNI ADMIN OPERATIONS</h1>
+        <h1>ALBERTIANS ADMIN OPERATIONS</h1>
         <!-- <i class="fas fa-user-cog"></i> -->
       </div>
 
@@ -87,14 +90,20 @@ if (empty($_SESSION['SUID'])) {
           <h4>Notifications</h4>
           <a href="Alumni/user_management/dash.php">notifications</a>
         </div>
-
+        <?php if($SDEPT=='admin'):?>
+        <div class="card">
+          <!-- <img src="#img#"> -->
+          <i class="fas fa-users-cog"></i>
+          <h4>Admins</h4>
+          <a href="Alumni/Admins/adminopr.php">Add HODs</a>
+        </div>
+        <?php endif;?>
       </div>
-      <div class="main-top">
-        <h1>AIM PLACEMENT ADMIN DASHBOARD</h1>
+      <!-- <div class="main-top"> -->
+        <!-- <h1>AIM PLACEMENT ADMIN DASHBOARD</h1> -->
         <!-- <i class="fas fa-user-cog"></i> -->
-
-      </div>
-      <div class="users">
+      <!-- </div> -->
+      <!-- <div class="users">
         <div class="card">
           <i class="fa-solid fa-comment-dots"></i>
           <h4>Requests Management</h4>
@@ -105,7 +114,7 @@ if (empty($_SESSION['SUID'])) {
           <h4>Clear Table</h4>
           <a href="#">table operations</a>
         </div>
-      </div>
+      </div> -->
     </section>
   </div>
 

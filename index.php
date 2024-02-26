@@ -25,6 +25,7 @@ if (isset($_POST['login'])) {
 
             $_SESSION['name'] = $admin['username'];
             $_SESSION['SUID'] = $admin['_id'];
+            $_SESSION['dept'] = $admin['department'];
 
             header("Location:dashboard.php");
             exit;

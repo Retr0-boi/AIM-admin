@@ -1,7 +1,16 @@
 <?php
 include '../mongoDB.php';
+if (!isset($_SESSION['dept'])) {
+    session_start();
+    $SNAME = $_SESSION['name'];
+    $SDEPT = $_SESSION['dept'];
+}
+if ($SDEPT == 'admin') {
+    $q_get_requests = ['account_status' => 'approved'];
+} else {
+    $q_get_requests = ['account_status' => 'approved', 'department' => $SDEPT];
+}
 
-$q_get_requests = ['account_status' => 'approved'];
 
 $usersCollection = $database->users;
 
@@ -29,7 +38,7 @@ $reqs_available = count($r_get_requests_array) > 0;
         <section class="main">
             <div class="main-top">
                 <h1>Account Management</h1>
-                <i class="fas fa-user-cog"></i>
+                <!-- <i class="fas fa-user-cog"></i> -->
             </div>
 
             <section class="attendance">
@@ -65,6 +74,7 @@ $reqs_available = count($r_get_requests_array) > 0;
                                     $program = $row_req["program"];
                                     $email = $row_req["email"];
                                     $updation_date = $row_req["updation_date"]->toDateTime()->format('Y-m-d');
+                                    // $updation_date = $row_req["updation_date"];
                                     $updated_by = $row_req["updated_by"];
                                 ?>
                                     <form method="post" id="approvalForm" onsubmit="return submitForm()">
@@ -99,14 +109,14 @@ $reqs_available = count($r_get_requests_array) > 0;
                         $currentDateTime = new MongoDB\BSON\UTCDateTime((new DateTime())->getTimestamp() * 1000);
                         $usersCollection = $database->users;
 
-                            $updateResult = $usersCollection->updateOne(
-                                ['_id' => new MongoDB\BSON\ObjectId($r_id)],
-                                ['$set' => [
-                                    'account_status' => 'locked',
-                                    'updation_date' => $currentDateTime,
-                                    'updated_by' => $SNAME
-                                ]]
-                            );
+                        $updateResult = $usersCollection->updateOne(
+                            ['_id' => new MongoDB\BSON\ObjectId($r_id)],
+                            ['$set' => [
+                                'account_status' => 'locked',
+                                'updation_date' => $currentDateTime,
+                                'updated_by' => $SNAME
+                            ]]
+                        );
                         if ($updateResult->getModifiedCount() > 0) {
                             echo "<script>window.location.href='approved.php'</script>";
                         } else {

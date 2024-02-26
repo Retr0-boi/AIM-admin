@@ -10,6 +10,7 @@ $messageCollection = $database->selectCollection("messages");
 $postsCollections = $database->selectCollection("posts");
 $authCollections = $database->selectCollection("auth");
 $filtersCollections = $database->selectCollection("filters");
+$visitCollections = $database->selectCollection("visit");
 
 file_put_contents('php://stdout', file_get_contents('php://input'));
 
@@ -434,8 +435,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_GET['action']) && $_GET['act
 
 if ($_SERVER["REQUEST_METHOD"] == "GET" && isset($_GET['action']) && $_GET['action'] == 'getJobs') {
     // Retrieve job data from the database
+    $department = $_GET['department'];
+
     $cursor = $postsCollections->aggregate([
-        ['$match' => ['type' => 'job', 'status' => 'approved']],
+        ['$match' => ['type' => 'job', 'status' => 'approved', 'department' => $department,]],
         ['$project' => ['subject' => 1, 'job_details' => 1, 'created_at' => 1, 'link' => 1]],
     ]);
     // Convert the cursor to an array
@@ -455,7 +458,7 @@ if ($_SERVER["REQUEST_METHOD"] == "GET" && isset($_GET['action']) && $_GET['acti
         echo json_encode($response);
         exit;
     } else {
-        $response = ["success" => false, "error" => "No jobs found"];
+        $response = ["success" => false, "error" => "No jobs found", "dept" => $department];
         echo json_encode($response);
         exit;
     }
@@ -463,8 +466,10 @@ if ($_SERVER["REQUEST_METHOD"] == "GET" && isset($_GET['action']) && $_GET['acti
 
 if ($_SERVER["REQUEST_METHOD"] == "GET" && isset($_GET['action']) && $_GET['action'] == 'getEvents') {
     // Retrieve job data from the database
+    $department = $_GET['department'];
+
     $cursor = $postsCollections->aggregate([
-        ['$match' => ['type' => 'event']],
+        ['$match' => ['type' => 'event', 'department' => $department]],
         ['$project' => ['subject' => 1, 'job_details' => 1, 'created_at' => 1, 'link' => 1]],
     ]);
     // Convert the cursor to an array
@@ -898,6 +903,42 @@ if ($_SERVER["REQUEST_METHOD"] == "GET" && isset($_GET['action']) && $_GET['acti
         exit;
     } else {
         echo json_encode(['success' => false, 'error' => 'Failed to fetch courses for the department']);
+        exit;
+    }
+}
+
+if ($_SERVER["REQUEST_METHOD"] == "GET" && isset($_GET['action']) && $_GET['action'] == 'campusVisit') {
+    $mongoId = $_POST['mongoId'];
+    $date = $_POST['date'];
+    $department = $_POST['department'];
+
+    if (!empty($mongoId) && !empty($date) && !empty($department)) {
+
+        $document = [
+            '_id' => new MongoDB\BSON\ObjectID($mongoId),
+            'date' => $date,
+            'department' => $department,
+        ];
+
+        $result = $visitCollections->insertOne($document);
+
+        if ($result->getInsertedCount() > 0) {
+            // Update latest_timestamp and latest_message in the conversations table
+            
+
+            if ($updateResult->getModifiedCount() > 0) {
+                echo json_encode(['success' => true]);
+                exit;
+            } else {
+                echo json_encode(['success' => false, 'error' => 'Failed to update conversation']);
+                exit;
+            }
+        } else {
+            echo json_encode(['success' => false, 'error' => 'Failed to insert message into database']);
+            exit;
+        }
+    } else {
+        echo json_encode(['success' => false, 'error' => 'Missing required parameters']);
         exit;
     }
 }

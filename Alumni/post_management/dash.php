@@ -17,14 +17,14 @@ include '../mongoDB.php';
 
     <section class="main">
       <div class="main-top">
-        <h1>ADMIN DASHBOARD</h1>
+        <h1>ALBERTIANS POST MANAGEMENT</h1>
 
         <i class="fas fa-user-cog"></i>
       </div>
       welcome <?php echo $SNAME; ?>
-      nothing to see here for now :/ <br>
+      <!-- nothing to see here for now :/ <br> -->
       <div class="attendance">
-        <h1>TO DO LIST</h1>
+        <!-- <h1>TO DO LIST</h1>
         <div style="position:relative;left:20px;">
           <ul>
             <li>Request more info mail</li>
@@ -34,7 +34,7 @@ include '../mongoDB.php';
             <li>main logic for pending page</li>
             
           </ul>
-        </div>
+        </div> -->
       </div>
 
     </section>

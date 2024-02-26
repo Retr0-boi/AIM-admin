@@ -15,7 +15,7 @@ if ($SDEPT == 'admin') {
 // $sortCriteria = ['created_at' => 1];
 $postCollection = $database->posts;
 $deletedPostCollection = $database->deleted_posts;
-$r_job_get_requests = $postCollection->find($q_job_get_requests);
+$r_job_get_requests = $deletedPostCollection->find($q_job_get_requests);
 $r_job_get_requests_array = iterator_to_array($r_job_get_requests);
 $job_reqs_available = count($r_job_get_requests_array) > 0;
 ?>
@@ -37,7 +37,7 @@ $job_reqs_available = count($r_job_get_requests_array) > 0;
 
         <section class="main">
             <div class="main-top">
-                <h1>User Posts</h1>
+                <h1>Deleted Posts</h1>
                 <i class="fas fa-user-cog"></i>
             </div>
 
@@ -72,7 +72,7 @@ $job_reqs_available = count($r_job_get_requests_array) > 0;
                                 <div class="post-card-button">
                                     <form method="post" id="approvalForm" onsubmit="return submitForm()">
                                         <input type="hidden" name="id" value="<?php echo $r_id; ?>">
-                                        <button type="submit"  name="delete">Delete</button>
+                                        <button type="submit" class="restore"name="restore">restore</button>
                                     </form>
                                 </div>
 
@@ -92,17 +92,17 @@ $job_reqs_available = count($r_job_get_requests_array) > 0;
                 <?php
                 $updateResult = null;
 
-                if (isset($_POST['delete'])) {
+                if (isset($_POST['restore'])) {
                     $objectId = new MongoDB\BSON\ObjectId($_POST['id']);
 
-                    $document = $postCollection->findOne(['_id' => $objectId]);
+                    $document = $deletedPostCollection->findOne(['_id' => $objectId]);
 
                     if ($document) {
-                        $deletedPostCollection->insertOne($document);
+                        $postCollection->insertOne($document);
 
-                        $postCollection->deleteOne(['_id' => $objectId]);
+                        $deletedPostCollection->deleteOne(['_id' => $objectId]);
 
-                        echo "<script>window.location.href='posts.php'</script>";
+                        echo "<script>window.location.href='deleted_posts.php'</script>";
                     } else {
                         echo "<script>alert('Failed to delete post.');</script>";
                     }

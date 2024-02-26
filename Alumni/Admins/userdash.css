@@ -33,7 +33,7 @@ nav{
 }
 
 nav:hover{
-  width: 280px;
+  width: 300px;
   transition: 0.5s;
 }
 .logo{
@@ -45,7 +45,7 @@ nav:hover{
 
 .logo img{
   width: 55px;
-  height: 45px;
+  height: 55px;
   margin-left: 4px;
   /* border-radius: 50%; */
 }
@@ -85,9 +85,8 @@ nav .fas{
   font-size: 15px;
 }
 a:hover{
-  /* background: #8f8ff1b6; */
+  background: #8f8ff1b6;
 }
-
 a:hover i{
   color: var(--hover-primary);
   transition: 0.5s;

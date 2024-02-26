@@ -29,7 +29,7 @@ $reqs_available = count($r_get_requests_array) > 0;
         <section class="main">
             <div class="main-top">
                 <h1>Account Management</h1>
-                <i class="fas fa-user-cog"></i>
+                <!-- <i class="fas fa-user-cog"></i> -->
             </div>
 
             <section class="attendance">

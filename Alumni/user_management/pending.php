@@ -1,8 +1,16 @@
 <?php
 include '../mongoDB.php';
 
-$q_get_requests = ['account_status' => 'request_details'];
-
+if (!isset($_SESSION['dept'])) {
+    session_start();
+    $SNAME = $_SESSION['name'];
+    $SDEPT = $_SESSION['dept'];
+}
+if ($SDEPT == 'admin') {
+    $q_get_requests = ['account_status' => 'request_details'];
+} else {
+    $q_get_requests = ['account_status' => 'request_details', 'department' => $SDEPT];
+}
 $usersCollection = $database->users;
 
 $r_get_requests = $usersCollection->find($q_get_requests);
@@ -29,7 +37,7 @@ $reqs_available = count($r_get_requests_array) > 0;
         <section class="main">
             <div class="main-top">
                 <h1>Request Management</h1>
-                <i class="fas fa-user-cog"></i>
+                <!-- <i class="fas fa-user-cog"></i> -->
             </div>
 
             <section class="attendance">
@@ -84,7 +92,7 @@ $reqs_available = count($r_get_requests_array) > 0;
                                                 <input type="hidden" name="id" value="<?php echo $r_id; ?>">
                                                 <button type="submit" name="approve">approve</button>
                                                 <button type="submit" class="button-red" name="delete">delete</button>
-                                                <button type="submit" class="button-blue" name="view_details">view_details</button>
+                                                <button type="submit" class="button-blue" name="view_details">view details</button>
                                             </td>
                                         </tr>
                                     </form>
