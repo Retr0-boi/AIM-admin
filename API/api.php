@@ -912,6 +912,18 @@ if ($_SERVER["REQUEST_METHOD"] == "GET" && isset($_GET['action']) && $_GET['acti
     $date = $_POST['date'];
     $department = $_POST['department'];
 
+
+    //NEDS LOGIC
+    $check_if_exists=$visitCollections->find(['_id'=>$mongoId,'department'=>$department]);
+    $check_if_exists=iterator_to_array($check_if_exists);
+    $check_if_exists_count = count($r_get_requests_array) > 0;
+
+    if($check_if_exists_count){
+        //code to update the current inserted thingy with only the new date
+    }
+    else{
+        //code to insert the new data inside the Database
+    }
     if (!empty($mongoId) && !empty($date) && !empty($department)) {
 
         $document = [
