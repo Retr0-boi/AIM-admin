@@ -84,3 +84,8 @@
     color: #fff;
     transition: 0.5rem;
 }
+
+.dept{
+    font-size: 10px;
+    display: block;
+}

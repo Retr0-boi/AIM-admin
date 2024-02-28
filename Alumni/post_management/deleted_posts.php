@@ -87,7 +87,7 @@ $job_reqs_available = count($r_job_get_requests_array) > 0;
                     }
                     ?>
                 <?php } else {
-                    echo "There are no posts for now";
+                    echo "There are no deleted posts for now";
                 } ?>
                 <?php
                 $updateResult = null;

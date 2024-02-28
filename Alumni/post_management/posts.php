@@ -14,6 +14,7 @@ if ($SDEPT == 'admin') {
 }
 // $sortCriteria = ['created_at' => 1];
 $postCollection = $database->posts;
+$userCollection = $database->users;
 $deletedPostCollection = $database->deleted_posts;
 $r_job_get_requests = $postCollection->find($q_job_get_requests);
 $r_job_get_requests_array = iterator_to_array($r_job_get_requests);
@@ -48,7 +49,14 @@ $job_reqs_available = count($r_job_get_requests_array) > 0;
                         $r_id = (string) $row_req["_id"];
                         $subject = $row_req["subject"];
                         $contents = $row_req["content"];
-                        // $posted_by = $row_req["posted_by"];
+                        $department = $row_req["department"];
+                        $posted_by = $row_req["posted_by"];
+                        // $username = null;
+                        
+                        // $userdata = $userCollection->find(['_id' => $posted_by]);
+                        // foreach ($userdata as $user) {
+                        //     $username = $user['name'];
+                        // }
                         if (isset($row_req["image"]))
                             $image = $row_req["image"];
 
@@ -57,6 +65,7 @@ $job_reqs_available = count($r_job_get_requests_array) > 0;
                             <div class="post-card">
                                 <div class="post-card-subject">
                                     <?php echo $subject; ?>
+                                    <span class="dept"> <?php echo $department; ?></span>
                                 </div>
                                 <?php if (isset($row_req["image"])) { ?>
 
@@ -72,7 +81,7 @@ $job_reqs_available = count($r_job_get_requests_array) > 0;
                                 <div class="post-card-button">
                                     <form method="post" id="approvalForm" onsubmit="return submitForm()">
                                         <input type="hidden" name="id" value="<?php echo $r_id; ?>">
-                                        <button type="submit"  name="delete">Delete</button>
+                                        <button type="submit" name="delete">Delete</button>
                                     </form>
                                 </div>
 
