@@ -95,7 +95,7 @@ if (empty($_SESSION['SUID'])) {
           <!-- <img src="#img#"> -->
           <i class="fas fa-users-cog"></i>
           <h4>Admins</h4>
-          <a href="Alumni/Admins/adminopr.php">Add HODs</a>
+          <a href="Alumni/Admins/adminopr.php">Admin Operations</a>
         </div>
         <?php endif;?>
       </div>

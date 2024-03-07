@@ -55,6 +55,12 @@ $current_page = basename($_SERVER['SCRIPT_NAME']);
                 <i class="fas fa-users"></i><span class="nav-item">View Admins/HODs</span>
             </a>
         </li>
+        <li class="<?php if ($current_page == "depts.php") {
+                        echo "active";
+                    } ?>"><a href="dept.php">
+                <i class="fas fa-building"></i><span class="nav-item">Add/Remove Depts</span>
+            </a>
+        </li>
 
        
 

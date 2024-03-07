@@ -907,50 +907,76 @@ if ($_SERVER["REQUEST_METHOD"] == "GET" && isset($_GET['action']) && $_GET['acti
     }
 }
 
-if ($_SERVER["REQUEST_METHOD"] == "GET" && isset($_GET['action']) && $_GET['action'] == 'campusVisit') {
+if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_GET['action']) && $_GET['action'] == 'campusVisit') {
     $mongoId = $_POST['mongoId'];
     $date = $_POST['date'];
     $department = $_POST['department'];
+    
+    
+    $check_if_exists = $visitCollections->find(['_id' => $mongoId, 'department' => $department]);
+    $check_if_exists = iterator_to_array($check_if_exists);
+    $check_if_exists_count = count($check_if_exists) > 0;
 
-
-    //NEDS LOGIC
-    $check_if_exists=$visitCollections->find(['_id'=>$mongoId,'department'=>$department]);
-    $check_if_exists=iterator_to_array($check_if_exists);
-    $check_if_exists_count = count($r_get_requests_array) > 0;
-
-    if($check_if_exists_count){
-        //code to update the current inserted thingy with only the new date
-    }
-    else{
-        //code to insert the new data inside the Database
-    }
-    if (!empty($mongoId) && !empty($date) && !empty($department)) {
-
-        $document = [
-            '_id' => new MongoDB\BSON\ObjectID($mongoId),
+    if ($check_if_exists) {
+        // Update the existing document
+        $result = $visitCollections->updateOne(
+            ['_id' => $mongoId, 'department' => $department],
+            ['$set' => ['date' => $date]]
+        );
+        if ($result->getModifiedCount() > 0) {
+            echo json_encode(['success' => true]);
+            exit;
+        } else {
+            echo json_encode(['success' => false, 'error' => 'Failed to update conversation']);
+            exit;
+        }
+    } else {
+        // Insert new document
+        $result = $visitCollections->insertOne([
+            '_id' => $mongoId,
             'date' => $date,
-            'department' => $department,
-        ];
-
-        $result = $visitCollections->insertOne($document);
-
+            'department' => $department
+        ]);
         if ($result->getInsertedCount() > 0) {
-            // Update latest_timestamp and latest_message in the conversations table
-            
-
-            if ($updateResult->getModifiedCount() > 0) {
-                echo json_encode(['success' => true]);
-                exit;
-            } else {
-                echo json_encode(['success' => false, 'error' => 'Failed to update conversation']);
-                exit;
-            }
+            echo json_encode(['success' => true]);
+            exit;
         } else {
             echo json_encode(['success' => false, 'error' => 'Failed to insert message into database']);
             exit;
         }
-    } else {
-        echo json_encode(['success' => false, 'error' => 'Missing required parameters']);
-        exit;
     }
+}
+
+if ($_SERVER["REQUEST_METHOD"] == "GET" && isset($_GET['action']) && $_GET['action'] == 'getNotifications') {
+    $department = $_GET['department'];
+
+    $filter = [
+        '$or' => [
+            ['type' => 'job', 'status' => 'approved'],
+            ['type' => 'event'],
+            ['type' => 'admin']
+        ],
+        'department' => $department
+    ];
+
+    $options = [    
+        'sort' => ['created_at' => -1]
+    ];
+
+    $cursor = $postsCollections->find($filter, $options);
+    $notifications = iterator_to_array($cursor);
+
+    $filteredNotifications = array_map(function($notification) {
+        $timestamp = $notification['created_at']->toDateTime()->format('Y-m-d');
+        return [
+            'type' => $notification['type'],
+            'timestamp' => $timestamp
+        ];
+    }, $notifications);
+
+    $jsonFilteredNotifications = json_encode($filteredNotifications);
+
+    error_log("Filtered notifications: " . $jsonFilteredNotifications);
+
+    echo $jsonFilteredNotifications;
 }
