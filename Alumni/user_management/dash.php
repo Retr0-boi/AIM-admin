@@ -17,7 +17,7 @@ include '../mongoDB.php';
 
     <section class="main">
       <div class="main-top">
-        <h1>ALBERTIANS ACCOUNT MANAGEMENT PAGE</h1>
+        <h1>ALBERTIANS USER MANAGEMENT PAGE</h1>
 
         <!-- <i class="fas fa-user-cog"></i> -->
       </div>
