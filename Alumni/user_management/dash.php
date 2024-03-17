@@ -22,7 +22,7 @@ include '../mongoDB.php';
         <!-- <i class="fas fa-user-cog"></i> -->
       </div>
       welcome <?php echo $SNAME; ?>
-      <div class="attendance">
+      <!-- <div class="attendance">
         <h1>TO DO LIST</h1>
         <div style="position:relative;left:20px;">
           <ul>
@@ -31,7 +31,7 @@ include '../mongoDB.php';
             
           </ul>
         </div>
-      </div>
+      </div> -->
 
     </section>
   </div>

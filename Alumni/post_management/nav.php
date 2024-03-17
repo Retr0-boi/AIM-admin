@@ -38,7 +38,7 @@ $current_page = basename($_SERVER['SCRIPT_NAME']);
         </span></a></span>
     </li>
 
-    <li class="<?php if ($current_page == "requests.php") {
+    <li class="<?php if ($current_page == "job_requests.php") {
                   echo "active";
                 } ?>">
       <a href="job_requests.php" style="position: relative; display: inline-block;">

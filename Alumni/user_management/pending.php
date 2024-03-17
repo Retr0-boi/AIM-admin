@@ -74,6 +74,7 @@ $reqs_available = count($r_get_requests_array) > 0;
                                     $email = $row_req["email"];
                                     $updation_date = $row_req["updation_date"]->toDateTime()->format('Y-m-d');
                                     $updated_by = $row_req["updated_by"];
+                                    $identification = $row_req["identification"];
 
                                 ?>
                                     <form method="post" id="approvalForm" onsubmit="return submitForm()">
@@ -92,7 +93,13 @@ $reqs_available = count($r_get_requests_array) > 0;
                                                 <input type="hidden" name="id" value="<?php echo $r_id; ?>">
                                                 <button type="submit" name="approve">approve</button>
                                                 <button type="submit" class="button-red" name="delete">delete</button>
-                                                <button type="submit" class="button-blue" name="view_details">view details</button>
+                                                <?php if ($identification == "none") : ?>
+
+                                                    <button type="submit" class="button-blue" name="view_details" disabled>View Details</button>
+                                                <?php else : ?>
+                                                    <button type="submit" class="button-blue" name="view_details" onclick="openImage()">View Details</button>
+
+                                                <?php endif; ?>
                                             </td>
                                         </tr>
                                     </form>
@@ -106,7 +113,7 @@ $reqs_available = count($r_get_requests_array) > 0;
                         echo "There are no users here to provide identification";
                     } ?>
                     <?php
-                    if (isset($_POST['approve']) or isset($_POST['disapprove']) or isset($_POST['request_details'])) {
+                    if (isset($_POST['approve']) or isset($_POST['disapprove'])or isset($_POST['delete'])) {
                         $r_id = $_POST['id'];
                         $currentDateTime = new MongoDB\BSON\UTCDateTime((new DateTime())->getTimestamp() * 1000);
                         $usersCollection = $database->users;
@@ -131,16 +138,7 @@ $reqs_available = count($r_get_requests_array) > 0;
                                 ]]
                             );
                         }
-                        if (isset($_POST['request_details'])) {
-                            $updateResult = $usersCollection->updateOne(
-                                ['_id' => new MongoDB\BSON\ObjectId($r_id)],
-                                ['$set' => [
-                                    'account_status' => 'request_details',
-                                    'updation_date' => $currentDateTime,
-                                    'updated_by' => $SNAME
-                                ]]
-                            );
-                        }
+                        
                         if ($updateResult->getModifiedCount() > 0) {
                             echo "<script>window.location.href='pending.php'</script>";
                         } else {
@@ -150,6 +148,12 @@ $reqs_available = count($r_get_requests_array) > 0;
                     ?>
 
                     <script>
+                        function openImage() {
+                            var imageUrl = "<?php echo $identification;?>";
+
+                            // Open the image in a new window or tab
+                            window.open(imageUrl, "_blank");
+                        }
                         var tableRows = document.querySelectorAll("#request tbody tr");
 
                         tableRows.forEach(function(row) {

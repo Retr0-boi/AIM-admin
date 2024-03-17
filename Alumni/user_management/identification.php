@@ -1,14 +1,9 @@
 <?php
 include '../mongoDB.php';
-
-// Check if the form is submitted
-if ($_SERVER["REQUEST_METHOD"] == "GET") {
-    // Process the form data
-    if (isset($_GET['r_id']) && isset($_GET['name'])) {
-        $r_id = $_GET['r_id'];
-        $name = $_GET['name'];
-    }
-}
+$r_id = $_GET['r_id'];
+$name = $_GET['name'];
+$usersCollection = $database->users;
+$destinationDirectory = 'assets/identification/';
 ?>
 
 <!DOCTYPE html>
@@ -16,7 +11,7 @@ if ($_SERVER["REQUEST_METHOD"] == "GET") {
 
 <head>
     <meta charset="UTF-8" />
-    <title>Image Upload Form with Preview</title>
+    <title>IDENTIFICATION</title>
     <style>
         body {
             font-family: 'Arial', sans-serif;
@@ -73,48 +68,65 @@ if ($_SERVER["REQUEST_METHOD"] == "GET") {
 <body>
     <div class="container">
         <!-- Form for uploading image -->
-        <form  method="get" enctype="multipart/form-data" onsubmit="return validateForm()">
+        <form method="post" enctype="multipart/form-data">
             <!-- Hidden input fields for r_id and name -->
-            <input type="hidden" name="r_id" value="<?php echo $_GET['r_id']; ?>">
-            <input type="hidden" name="name" value="<?php echo $_GET['name']; ?>">
+            <input type="hidden" name="r_id" value="<?php echo $r_id ?>">
+            <input type="hidden" name="name" value="<?php echo $name ?>">
 
             <!-- Input field for choosing an image -->
             <label for="image">Choose an image:</label>
             <input type="file" name="image" id="image" onchange="previewImage()" required>
 
             <!-- Image preview container -->
-            <img id="image-preview" src="#" alt="Image Preview">
-
+            <img id="image-preview" src="#" alt="Image Preview" style="height: 300px;width: 500px;">
+            <br>
             <!-- Submit button -->
             <input type="submit" value="Upload Image" name="upload">
         </form>
-        <?php 
-        if(isset($_GET['upload'])){
-            echo "<script>alert('$r_id');</script>";
-            echo "<script>alert('$name');</script>";
+        <?php
+        if (isset($_POST['upload'])) {
+            if (isset($_FILES['image']) && is_uploaded_file($_FILES['image']['tmp_name'])) {
+                $image_name = $_FILES['image']['name'];
+                $image_tmp = $_FILES['image']['tmp_name'];
+                $image_name_with_id = $r_id . '_' . $image_name;
+                $destination = $destinationDirectory . $image_name_with_id;
+                // $destination = 'assets/identification/' . $image_name;
+                if (!is_dir($destinationDirectory)) {
+                    mkdir($destinationDirectory, 0755, true);
+                }
+                if (move_uploaded_file($image_tmp, $destination)) {
+                    $updateResult = $usersCollection->updateOne(
+                        ['_id' => new MongoDB\BSON\ObjectId($r_id)],
+                        ['$set' => [
+                            'identification' => $destination
+                        ]]
+                    );
+                    if ($updateResult->getModifiedCount() > 0) {
+                        echo "<script>alert('uploaded successfully.');</script>";
+                        echo "<script>window.close();</script>";
+                    } else {
+                        echo "<script>alert('Failed to update user account please contact the support team or the administrators.');</script>";
+                    }
+                } else {
+                    echo "<script>alert('Failed to upload the file.');</script>";
+                }
+            }
         }
         ?>
         <script>
-            // JavaScript function to preview the selected image
             function previewImage() {
                 var preview = document.getElementById('image-preview');
                 var fileInput = document.getElementById('image');
                 var file = fileInput.files[0];
                 var reader = new FileReader();
 
-                reader.onload = function (e) {
+                reader.onload = function(e) {
                     preview.src = e.target.result;
                 };
 
                 if (file) {
                     reader.readAsDataURL(file);
                 }
-            }
-
-            // JavaScript function to validate the form before submission
-            function validateForm() {
-                // You can add additional validation logic here
-                return true; // Return true to submit the form, or false to prevent submission
             }
         </script>
     </div>

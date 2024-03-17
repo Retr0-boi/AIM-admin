@@ -7,7 +7,7 @@ include '../mongoDB.php';
 
 <head>
   <meta charset="UTF-8" />
-  <title>Admin Dashboard</title>
+  <title>POST MANAGEMENT</title>
   <!-- Font Awesome Cdn Link -->
 </head>
 

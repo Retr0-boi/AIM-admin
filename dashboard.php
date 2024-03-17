@@ -15,7 +15,7 @@ if (empty($_SESSION['SUID'])) {
 
 <head>
   <meta charset="UTF-8" />
-  <title>AIM</title>
+  <title>ALBERTIANS ADMIN</title>
   <link rel="stylesheet" href="userdash.css" />
   <!-- Font Awesome Cdn Link -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" />
@@ -84,12 +84,12 @@ if (empty($_SESSION['SUID'])) {
           <a href="Alumni/post_management/dash.php">post management</a>
         </div>
 
-        <div class="card">
-          <!-- <img src="#img#"> -->
+        <!-- <div class="card">
+          <img src="#img#">
           <i class="fa-solid fa-bell"></i>
           <h4>Notifications</h4>
           <a href="Alumni/user_management/dash.php">notifications</a>
-        </div>
+        </div> -->
         <?php if($SDEPT=='admin'):?>
         <div class="card">
           <!-- <img src="#img#"> -->

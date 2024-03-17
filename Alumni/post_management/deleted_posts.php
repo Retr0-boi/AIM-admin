@@ -24,7 +24,7 @@ $job_reqs_available = count($r_job_get_requests_array) > 0;
 
 <head>
     <meta charset="UTF-8" />
-    <title>Approval Requests</title>
+    <title>POST MANAGEMENT</title>
     <link rel="stylesheet" href="post.css" />
 
     <link rel="stylesheet" href="userdash.css" />

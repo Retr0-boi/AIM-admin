@@ -25,7 +25,7 @@ $job_reqs_available = count($r_job_get_requests_array) > 0;
 
 <head>
     <meta charset="UTF-8" />
-    <title>Approval Requests</title>
+    <title>POST MANAGEMENT</title>
     <link rel="stylesheet" href="post.css" />
 
     <link rel="stylesheet" href="userdash.css" />
@@ -52,14 +52,24 @@ $job_reqs_available = count($r_job_get_requests_array) > 0;
                         $department = $row_req["department"];
                         $posted_by = $row_req["posted_by"];
                         // $username = null;
-                        
+
                         // $userdata = $userCollection->find(['_id' => $posted_by]);
                         // foreach ($userdata as $user) {
                         //     $username = $user['name'];
                         // }
-                        if (isset($row_req["image"]))
-                            $image = $row_req["image"];
+                        if (isset($row_req["image"])) {
 
+                            $image = $row_req["image"];
+                            $pos = strpos($image, "/post_management/");
+
+                            // Extract the string that comes after "/assets"
+                            if ($pos !== false) {
+                                $image_path = substr($image, $pos + strlen("/post_management/"));
+                            } else {
+                                // If "/assets" is not found in the string
+                                $image_path = $image;
+                            }
+                        }
                 ?>
                         <div class="post-card-main">
                             <div class="post-card">
@@ -71,7 +81,7 @@ $job_reqs_available = count($r_job_get_requests_array) > 0;
 
                                     <div class="post-card-image">
 
-                                        <img src="<?php echo $image; ?>">
+                                        <img src="<?php echo $image_path; ?>">
                                     </div>
                                 <?php } ?>
 

@@ -23,7 +23,7 @@ $job_reqs_available = count($r_job_get_requests_array) > 0;
 
 <head>
     <meta charset="UTF-8" />
-    <title>Approval Requests</title>
+    <title>Job Approval Requests</title>
     <link rel="stylesheet" href="userdash.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" />
 </head>

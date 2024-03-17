@@ -41,7 +41,7 @@ if (isset($_POST['login'])) {
 <html lang="en">
 
 <head>
-    <title>AIM</title>
+    <title>ALBERTIANS</title>
 
     <!-- Meta -->
     <meta charset="utf-8">

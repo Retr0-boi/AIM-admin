@@ -20,6 +20,12 @@ $r_get_requests_array = iterator_to_array($r_get_requests);
 
 $reqs_available = count($r_get_requests_array) > 0;
 
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\Exception;
+
+require 'PHPMailer/src/Exception.php';
+require 'PHPMailer/src/PHPMailer.php';
+require 'PHPMailer/src/SMTP.php';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -107,10 +113,28 @@ $reqs_available = count($r_get_requests_array) > 0;
                     <?php
                     if (isset($_POST['approve']) or isset($_POST['delete']) or isset($_POST['request_details'])) {
                         $r_id = $_POST['id'];
+                        $gmail = $_POST['gmail'];
+                        $name = $_POST['name'];
+
                         $currentDateTime = new MongoDB\BSON\UTCDateTime((new DateTime())->getTimestamp() * 1000);
                         $usersCollection = $database->users;
 
                         if (isset($_POST['approve'])) {
+                            $mail = new PHPMailer(true);
+                            $mail->isSMTP();
+                            $mail->Host = 'smtp.gmail.com';
+                            $mail->SMTPAuth = true;
+                            $mail->Username = 'albertiansapp@gmail.com';
+                            $mail->Password = 'xxqywccphwudrhip';
+                            $mail->SMTPSecure = 'ssl';
+                            $mail->Port = 465;
+                            $mail->setFrom('albertiansapp@gmail.com');
+                            $mail->addAddress($gmail);
+                            $mail->isHTML(true);
+                            $mail->Subject = 'Albertians App account approved';
+                            $mail->Body = "Hello, " . $name . " Your account creation request on the Albertians app has been approved,\n
+                                            you can now use your registered email and password to log into the application.";
+                            $mail->send();
                             $updateResult = $usersCollection->updateOne(
                                 ['_id' => new MongoDB\BSON\ObjectId($r_id)],
                                 ['$set' => [
