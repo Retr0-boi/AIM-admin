@@ -1,8 +1,16 @@
 <?php
 include '../mongoDB.php';
 
-$q_get_requests = ['account_status' => 'locked'];
-
+if (!isset($_SESSION['dept'])) {
+    session_start();
+    $SNAME = $_SESSION['name'];
+    $SDEPT = $_SESSION['dept'];
+}
+if ($SDEPT == 'admin') {
+    $q_get_requests = ['account_status' => 'locked'];
+} else {
+    $q_get_requests = ['account_status' => 'locked', 'department' => $SDEPT];
+}
 $usersCollection = $database->users;
 
 $r_get_requests = $usersCollection->find($q_get_requests);

@@ -6,9 +6,9 @@ if (!isset($_SESSION['dept'])) {
   $SDEPT = $_SESSION['dept'];
 }
 if ($SDEPT == 'admin')
-    $q_get_requests_count = ['account_status' => 'waiting'];
+  $q_get_requests_count = ['account_status' => 'waiting'];
 else
-    $q_get_requests_count = ['account_status' => 'waiting', 'department' => $SDEPT];
+  $q_get_requests_count = ['account_status' => 'waiting', 'department' => $SDEPT];
 
 // $q_get_requests_count = ['account_status' => 'waiting'];
 $usersCollection = $database->users;
@@ -69,7 +69,12 @@ $current_page = basename($_SERVER['SCRIPT_NAME']);
     <li class="<?php if ($current_page == "deleted.php") {
                   echo "active";
                 } ?>"><a href="deleted.php">
-        <i class="fas fa-trash"></i><span class="nav-item">Deleted Accounts</span>
+        <i class="fas fa-trash"></i><span class="nav-item">Deleted Requests</span>
+      </a></li>
+    <li class="<?php if ($current_page == "campusVisit.php") {
+                  echo "active";
+                } ?>"><a href="campusVisit.php">
+        <i class="fas fa-envelope-open"></i><span class="nav-item">Visits</span>
       </a></li>
 
     <!-- <li><a href="#">
@@ -92,7 +97,7 @@ $current_page = basename($_SERVER['SCRIPT_NAME']);
         <i class="fas fa-arrow-left "></i>
         <span class="nav-item">GO BACK</span>
       </a></li>
-      
+
     <li><a href="../../logout.php" class="logout">
         <i class="fas fa-sign-out-alt"></i>
         <span class="nav-item">Log out</span>

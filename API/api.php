@@ -534,27 +534,27 @@ if ($_SERVER["REQUEST_METHOD"] == "GET" && isset($_GET['action']) && $_GET['acti
 
     if (isset($data['name']) && $data['name'] != '') {
         $queryConditions['name'] = $data['name'];
-        error_log("passed query: name - " . $data['name']);
+        // error_log("passed query: name - " . $data['name']);
     }
 
     if (isset($data['batchFrom']) && $data['batchFrom'] != '') {
         $queryConditions['batch_from'] = $data['batchFrom'];
-        error_log("passed query: batchFrom - " . $data['batchFrom']);
+        // error_log("passed query: batchFrom - " . $data['batchFrom']);
     }
 
     if (isset($data['batchTo']) && $data['batchTo'] != '') {
         $queryConditions['batch_to'] = $data['batchTo'];
-        error_log("passed query: batchTo - " . $data['batchTo']);
+        // error_log("passed query: batchTo - " . $data['batchTo']);
     }
 
     if (isset($data['department']) && $data['department'] != '') {
         $queryConditions['department'] = $data['department'];
-        error_log("passed query: department - " . $data['department']);
+        // error_log("passed query: department - " . $data['department']);
     }
 
     if (isset($data['course']) && $data['course'] != '') {
         $queryConditions['program'] = $data['course'];
-        error_log("passed query: course - " . $data['course']);
+        // error_log("passed query: course - " . $data['course']);
     }
 
     $queryConditions['account_status'] = 'approved';
@@ -581,7 +581,7 @@ if ($_SERVER["REQUEST_METHOD"] == "GET" && isset($_GET['action']) && $_GET['acti
     }
     // error_log("Constructed query: $constructedQuery");
     // Log the number of documents returned by the find operation
-    error_log("Number of documents found: " . $documentCount);
+    // error_log("Number of documents found: " . $documentCount);
     $cursor = $userCollection->find($queryConditions, $fields);
 
     $matchingUsers = [];
@@ -595,17 +595,17 @@ if ($_SERVER["REQUEST_METHOD"] == "GET" && isset($_GET['action']) && $_GET['acti
         // Add the user data to the array
         $matchingUsers[] = $userData;
     }
-    error_log("documents before returning: " . json_encode($matchingUsers));
+    // error_log("documents before returning: " . json_encode($matchingUsers));
 
     if (!empty($matchingUsers)) {
         $response = ["success" => true, "matchedUsers" => $matchingUsers];
-        error_log("documents returned: " . json_encode($response));
+        // error_log("documents returned: " . json_encode($response));
 
         echo json_encode($response);
         exit;
     } else {
         // Log that no matching users were found
-        error_log("No matching users found");
+        // error_log("No matching users found");
         $response = ["success" => false, "error" => "No matching users found"];
         echo json_encode($response);
         exit;
@@ -620,14 +620,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_GET['action']) && $_GET['act
     if (validateAuth($email, $password)) {
         // Check if userId is provided
         if (!empty($userId)) {
-            error_log("Got inside the first if with userId: " . $userId);
+            // error_log("Got inside the first if with userId: " . $userId);
 
             // Check if file is uploaded
             if (isset($_FILES['profile_image']) && is_uploaded_file($_FILES['profile_image']['tmp_name'])) {
                 $image_name = $_FILES['profile_image']['name'];
                 $image_tmp = $_FILES['profile_image']['tmp_name'];
                 $destination = '../../AIM/Alumni/user_management/assets/profile_pictures/' . $image_name;
-                error_log("Directory: " . $destination);
+                // error_log("Directory: " . $destination);
 
                 // Move the uploaded file to the server
                 if (move_uploaded_file($image_tmp, $destination)) {
@@ -650,21 +650,21 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_GET['action']) && $_GET['act
                             exit;
                         }
                     } catch (Exception $e) {
-                        error_log("Exception occurred: " . $e->getMessage());
+                        // error_log("Exception occurred: " . $e->getMessage());
                         http_response_code(500); // Internal Server Error
                         $response = ["success" => false, "error" => "Failed to update profile picture: " . $e->getMessage()];
                         echo json_encode($response);
                         exit;
                     }
                 } else {
-                    error_log("Failed to move uploaded file");
+                    // error_log("Failed to move uploaded file");
                     http_response_code(500); // Internal Server Error
                     $response = ["success" => false, "error" => "Failed to move uploaded file"];
                     echo json_encode($response);
                     exit;
                 }
             } else {
-                error_log("No file uploaded");
+                // error_log("No file uploaded");
                 http_response_code(400); // Bad Request
                 $response = ["success" => false, "error" => "No file uploaded"];
                 echo json_encode($response);
@@ -703,7 +703,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_GET['action']) && $_GET['act
 
 
                 if (move_uploaded_file($image_tmp, $destination)) {
-                    error_log("trying to move uploaded files");
+                    // error_log("trying to move uploaded files");
 
                     try {
                         $insertResult = $postsCollections->insertOne([
@@ -732,7 +732,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_GET['action']) && $_GET['act
                             exit;
                         }
                     } catch (Exception $e) {
-                        error_log("Exception occurred: " . $e->getMessage());
+                        // error_log("Exception occurred: " . $e->getMessage());
                         http_response_code(500);
                         $response = ["success" => false, "error" => "Failed to post content: " . $e->getMessage()];
                         echo json_encode($response);
@@ -771,7 +771,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_GET['action']) && $_GET['act
                         exit;
                     }
                 } catch (Exception $e) {
-                    error_log("Exception occurred: " . $e->getMessage());
+                    // error_log("Exception occurred: " . $e->getMessage());
                     http_response_code(500); // Internal Server Error
                     $response = ["success" => false, "error" => "Failed to post content: " . $e->getMessage()];
                     echo json_encode($response);
@@ -1025,7 +1025,7 @@ if ($_SERVER["REQUEST_METHOD"] == "GET" && isset($_GET['action']) && $_GET['acti
 
     $jsonFilteredNotifications = json_encode($filteredNotifications);
 
-    error_log("Filtered notifications: " . $jsonFilteredNotifications);
+    // error_log("Filtered notifications: " . $jsonFilteredNotifications);
 
     echo $jsonFilteredNotifications;
 }
