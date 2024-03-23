@@ -14,6 +14,29 @@ $visitCollections = $database->selectCollection("visit");
 
 file_put_contents('php://stdout', file_get_contents('php://input'));
 
+function validateAuth($email, $password)
+{
+    $mongoClient = new MongoDB\Client("mongodb://localhost:27017");
+    $database = $mongoClient->selectDatabase("AIM");
+    $userCollection = $database->selectCollection("users");
+    $authCollections = $database->selectCollection("auth");
+
+    $userEmail = $email;
+    $userPassword = $password;
+    $authUser = $authCollections->findOne(['email' => $userEmail]);
+    if ($authUser) {
+        if (md5($userPassword) === $authUser['password']) {
+            $userId = $authUser['_id'];
+            $user = $userCollection->findOne(['_id' => new MongoDB\BSON\ObjectID($userId)]);
+
+            if ($user && $user['account_status'] == 'approved') {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
 function validateData($data)
 {
     $requiredFields = [
@@ -385,49 +408,57 @@ if ($_SERVER["REQUEST_METHOD"] == "GET" && (isset($_GET['action']) && $_GET['act
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_GET['action']) && $_GET['action'] == 'postJobsEvents') {
     // Extract data from the request
     $data = json_decode(file_get_contents("php://input"), true);
-
-    // Check if the data is valid
-    if ($data === null && json_last_error() !== JSON_ERROR_NONE) {
-        $response = ["success" => false, "error" => "Invalid JSON format"];
-        echo json_encode($response);
-        exit;
-    }
-
-    // Check if subject and job details are provided
-    if (!isset($data['subject']) || !isset($data['job_details'])) {
-        $response = ["success" => false, "error" => "Subject and job details are required"];
-        echo json_encode($response);
-        exit;
-    }
-
-    // Prepare data to insert into the database
-    $jobData = [
-        'posted_by' => $data['posted_by'],
-        'type' => $data['type'],
-        'subject' => $data['subject'],
-        'job_details' => $data['job_details'],
-        'link' => $data['link'],
-        'status' => $data['status'],
-        'department' => $data['department'],
-        'updation_date' => "",
-        'updated_by' => "",
-        'created_at' => new MongoDB\BSON\UTCDateTime(), // Add current timestamp
-    ];
-
-    // Insert data into the jobs collection
-    try {
-        // Insert data into the jobs collection
-        $insertResult = $postsCollections->insertOne($jobData);
-
-        if ($insertResult->getInsertedCount() > 0) {
-            $response = ["success" => true, "message" => "Job posted successfully"];
+    $email = $data['email'];
+    $password = $data['password'];
+    if (validateAuth($email, $password)) {
+        // Check if the data is valid
+        if ($data === null && json_last_error() !== JSON_ERROR_NONE) {
+            $response = ["success" => false, "error" => "Invalid JSON format"];
             echo json_encode($response);
             exit;
-        } else {
-            throw new Exception("Failed to insert job data");
         }
-    } catch (Exception $e) {
-        $response = ["success" => false, "error" => $e->getMessage()];
+
+        // Check if subject and job details are provided
+        if (!isset($data['subject']) || !isset($data['job_details'])) {
+            $response = ["success" => false, "error" => "Subject and details are required"];
+            echo json_encode($response);
+            exit;
+        }
+
+        // Prepare data to insert into the database
+        $jobData = [
+            'posted_by' => $data['posted_by'],
+            'type' => $data['type'],
+            'subject' => $data['subject'],
+            'job_details' => $data['job_details'],
+            'link' => $data['link'],
+            'status' => $data['status'],
+            'department' => $data['department'],
+            'updation_date' => "",
+            'updated_by' => "",
+            'created_at' => new MongoDB\BSON\UTCDateTime(), // Add current timestamp
+        ];
+
+        // Insert data into the jobs collection
+        try {
+            // Insert data into the jobs collection
+            $insertResult = $postsCollections->insertOne($jobData);
+
+            if ($insertResult->getInsertedCount() > 0) {
+                $response = ["success" => true, "message" => "posted successfully"];
+                echo json_encode($response);
+                exit;
+            } else {
+                throw new Exception("Failed to insert data");
+            }
+        } catch (Exception $e) {
+            $response = ["success" => false, "error" => $e->getMessage()];
+            echo json_encode($response);
+            exit;
+        }
+    } else {
+        http_response_code(401); // Bad Request
+        $response = ["success" => false, "error" => "Access Denied"];
         echo json_encode($response);
         exit;
     }
@@ -583,63 +614,72 @@ if ($_SERVER["REQUEST_METHOD"] == "GET" && isset($_GET['action']) && $_GET['acti
 
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_GET['action']) && $_GET['action'] == 'updateProfilePicture') {
     $userId = $_POST['mongoId'];
-    error_log("user ID: " . $userId);
-    // Check if userId is provided
-    if (!empty($userId)) {
-        error_log("Got inside the first if with userId: " . $userId);
+    $email = $_POST['email'];
+    $password = $_POST['password'];
+    // error_log("user ID: " . $userId);
+    if (validateAuth($email, $password)) {
+        // Check if userId is provided
+        if (!empty($userId)) {
+            error_log("Got inside the first if with userId: " . $userId);
 
-        // Check if file is uploaded
-        if (isset($_FILES['profile_image']) && is_uploaded_file($_FILES['profile_image']['tmp_name'])) {
-            $image_name = $_FILES['profile_image']['name'];
-            $image_tmp = $_FILES['profile_image']['tmp_name'];
-            $destination = '../../AIM/Alumni/user_management/assets/profile_pictures/' . $image_name;
-            error_log("Directory: " . $destination);
+            // Check if file is uploaded
+            if (isset($_FILES['profile_image']) && is_uploaded_file($_FILES['profile_image']['tmp_name'])) {
+                $image_name = $_FILES['profile_image']['name'];
+                $image_tmp = $_FILES['profile_image']['tmp_name'];
+                $destination = '../../AIM/Alumni/user_management/assets/profile_pictures/' . $image_name;
+                error_log("Directory: " . $destination);
 
-            // Move the uploaded file to the server
-            if (move_uploaded_file($image_tmp, $destination)) {
-                try {
-                    // Update the user's profile picture path in the database
-                    $updateResult = $userCollection->updateOne(
-                        ['_id' => new MongoDB\BSON\ObjectId($userId)],
-                        ['$set' => ['profile_picture' => $destination]]
-                    );
+                // Move the uploaded file to the server
+                if (move_uploaded_file($image_tmp, $destination)) {
+                    try {
+                        // Update the user's profile picture path in the database
+                        $updateResult = $userCollection->updateOne(
+                            ['_id' => new MongoDB\BSON\ObjectId($userId)],
+                            ['$set' => ['profile_picture' => $destination]]
+                        );
 
-                    if ($updateResult->getModifiedCount() > 0) {
-                        http_response_code(200); // OK
-                        $response = ["success" => true, "message" => "Profile picture updated successfully"];
-                        echo json_encode($response);
-                        exit;
-                    } else {
+                        if ($updateResult->getModifiedCount() > 0) {
+                            http_response_code(200); // OK
+                            $response = ["success" => true, "message" => "Profile picture updated successfully"];
+                            echo json_encode($response);
+                            exit;
+                        } else {
+                            http_response_code(500); // Internal Server Error
+                            $response = ["success" => false, "error" => "Failed to update profile picture"];
+                            echo json_encode($response);
+                            exit;
+                        }
+                    } catch (Exception $e) {
+                        error_log("Exception occurred: " . $e->getMessage());
                         http_response_code(500); // Internal Server Error
-                        $response = ["success" => false, "error" => "Failed to update profile picture"];
+                        $response = ["success" => false, "error" => "Failed to update profile picture: " . $e->getMessage()];
                         echo json_encode($response);
                         exit;
                     }
-                } catch (Exception $e) {
-                    error_log("Exception occurred: " . $e->getMessage());
+                } else {
+                    error_log("Failed to move uploaded file");
                     http_response_code(500); // Internal Server Error
-                    $response = ["success" => false, "error" => "Failed to update profile picture: " . $e->getMessage()];
+                    $response = ["success" => false, "error" => "Failed to move uploaded file"];
                     echo json_encode($response);
                     exit;
                 }
             } else {
-                error_log("Failed to move uploaded file");
-                http_response_code(500); // Internal Server Error
-                $response = ["success" => false, "error" => "Failed to move uploaded file"];
+                error_log("No file uploaded");
+                http_response_code(400); // Bad Request
+                $response = ["success" => false, "error" => "No file uploaded"];
                 echo json_encode($response);
                 exit;
             }
         } else {
-            error_log("No file uploaded");
+            // error_log("Invalid userId");
             http_response_code(400); // Bad Request
-            $response = ["success" => false, "error" => "No file uploaded"];
+            $response = ["success" => false, "error" => "Invalid userId"];
             echo json_encode($response);
             exit;
         }
     } else {
-        error_log("Invalid userId");
         http_response_code(400); // Bad Request
-        $response = ["success" => false, "error" => "Invalid userId"];
+        $response = ["success" => false, "error" => "Access Denied"];
         echo json_encode($response);
         exit;
     }
@@ -651,17 +691,60 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_GET['action']) && $_GET['act
     $postedBy = $_POST['posted_by'];
     $type = $_POST['type'];
     $department = $_POST['department'];
+    $email = $_POST['email'];
+    $password = $_POST['password'];
+    if (validateAuth($email, $password)) {
 
-    if (!empty($subject) && !empty($content) && !empty($postedBy) && !empty($type)) {
-        if (isset($_FILES['image']) && is_uploaded_file($_FILES['image']['tmp_name'])) {
-            $image_name = $_FILES['image']['name'];
-            $image_tmp = $_FILES['image']['tmp_name'];
-            $destination = '../../AIM/Alumni/post_management/assets/uploads/' . $image_name;
+        if (!empty($subject) && !empty($content) && !empty($postedBy) && !empty($type)) {
+            if (isset($_FILES['image']) && is_uploaded_file($_FILES['image']['tmp_name'])) {
+                $image_name = $_FILES['image']['name'];
+                $image_tmp = $_FILES['image']['tmp_name'];
+                $destination = '../../AIM/Alumni/post_management/assets/uploads/' . $image_name;
 
 
-            if (move_uploaded_file($image_tmp, $destination)) {
-                error_log("trying to move uploaded files");
+                if (move_uploaded_file($image_tmp, $destination)) {
+                    error_log("trying to move uploaded files");
 
+                    try {
+                        $insertResult = $postsCollections->insertOne([
+                            'subject' => $subject,
+                            'content' => $content,
+                            'posted_by' => $postedBy,
+                            'type' => $type,
+                            'department' => $department,
+                            'image' => $destination,
+                            'likeCount' => 0,
+                            'comments' => [],
+                            'likes' => [],
+                            'created_at' => new MongoDB\BSON\UTCDateTime(),
+
+                        ]);
+
+                        if ($insertResult->getInsertedCount() > 0) {
+                            http_response_code(200);
+                            $response = ["success" => true, "message" => "Content posted successfully"];
+                            echo json_encode($response);
+                            exit;
+                        } else {
+                            http_response_code(500);
+                            $response = ["success" => false, "error" => "Failed to post content"];
+                            echo json_encode($response);
+                            exit;
+                        }
+                    } catch (Exception $e) {
+                        error_log("Exception occurred: " . $e->getMessage());
+                        http_response_code(500);
+                        $response = ["success" => false, "error" => "Failed to post content: " . $e->getMessage()];
+                        echo json_encode($response);
+                        exit;
+                    }
+                } else {
+                    http_response_code(500);
+                    $response = ["success" => false, "error" => "Failed to move uploaded file"];
+                    echo json_encode($response);
+                    exit;
+                }
+            } else {
                 try {
                     $insertResult = $postsCollections->insertOne([
                         'subject' => $subject,
@@ -669,7 +752,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_GET['action']) && $_GET['act
                         'posted_by' => $postedBy,
                         'type' => $type,
                         'department' => $department,
-                        'image' => $destination,
                         'likeCount' => 0,
                         'comments' => [],
                         'likes' => [],
@@ -678,66 +760,33 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_GET['action']) && $_GET['act
                     ]);
 
                     if ($insertResult->getInsertedCount() > 0) {
-                        http_response_code(200);
+                        http_response_code(200); // OK
                         $response = ["success" => true, "message" => "Content posted successfully"];
                         echo json_encode($response);
                         exit;
                     } else {
-                        http_response_code(500);
+                        http_response_code(500); // Internal Server Error
                         $response = ["success" => false, "error" => "Failed to post content"];
                         echo json_encode($response);
                         exit;
                     }
                 } catch (Exception $e) {
                     error_log("Exception occurred: " . $e->getMessage());
-                    http_response_code(500);
+                    http_response_code(500); // Internal Server Error
                     $response = ["success" => false, "error" => "Failed to post content: " . $e->getMessage()];
                     echo json_encode($response);
                     exit;
                 }
-            } else {
-                http_response_code(500);
-                $response = ["success" => false, "error" => "Failed to move uploaded file"];
-                echo json_encode($response);
-                exit;
             }
         } else {
-            try {
-                $insertResult = $postsCollections->insertOne([
-                    'subject' => $subject,
-                    'content' => $content,
-                    'posted_by' => $postedBy,
-                    'type' => $type,
-                    'department' => $department,
-                    'likeCount' => 0,
-                    'comments' => [],
-                    'likes' => [],
-                    'created_at' => new MongoDB\BSON\UTCDateTime(),
-
-                ]);
-
-                if ($insertResult->getInsertedCount() > 0) {
-                    http_response_code(200); // OK
-                    $response = ["success" => true, "message" => "Content posted successfully"];
-                    echo json_encode($response);
-                    exit;
-                } else {
-                    http_response_code(500); // Internal Server Error
-                    $response = ["success" => false, "error" => "Failed to post content"];
-                    echo json_encode($response);
-                    exit;
-                }
-            } catch (Exception $e) {
-                error_log("Exception occurred: " . $e->getMessage());
-                http_response_code(500); // Internal Server Error
-                $response = ["success" => false, "error" => "Failed to post content: " . $e->getMessage()];
-                echo json_encode($response);
-                exit;
-            }
+            http_response_code(400); // Bad Request
+            $response = ["success" => false, "error" => "Missing parameters"];
+            echo json_encode($response);
+            exit;
         }
     } else {
-        http_response_code(400); // Bad Request
-        $response = ["success" => false, "error" => "Missing parameters"];
+        http_response_code(401); // Bad Request
+        $response = ["success" => false, "error" => "Access Denied"];
         echo json_encode($response);
         exit;
     }
@@ -911,8 +960,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_GET['action']) && $_GET['act
     $mongoId = $_POST['mongoId'];
     $date = $_POST['date'];
     $department = $_POST['department'];
-    
-    
+
+
     $check_if_exists = $visitCollections->find(['_id' => $mongoId, 'department' => $department]);
     $check_if_exists = iterator_to_array($check_if_exists);
     $check_if_exists_count = count($check_if_exists) > 0;
@@ -959,14 +1008,14 @@ if ($_SERVER["REQUEST_METHOD"] == "GET" && isset($_GET['action']) && $_GET['acti
         'department' => $department
     ];
 
-    $options = [    
+    $options = [
         'sort' => ['created_at' => -1]
     ];
 
     $cursor = $postsCollections->find($filter, $options);
     $notifications = iterator_to_array($cursor);
 
-    $filteredNotifications = array_map(function($notification) {
+    $filteredNotifications = array_map(function ($notification) {
         $timestamp = $notification['created_at']->toDateTime()->format('Y-m-d');
         return [
             'type' => $notification['type'],
